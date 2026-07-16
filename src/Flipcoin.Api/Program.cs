@@ -1,3 +1,4 @@
+using Flipcoin.Api.Extensions;
 using Flipcoin.Api.HostedServices;
 using Flipcoin.Application;
 using Flipcoin.Infrastructure;
@@ -28,6 +29,7 @@ try
         ?? throw new InvalidOperationException("Missing 'Postgres' connection string.");
     builder.Services.AddInfrastructure(connectionString);
     builder.Services.AddApplication();
+    builder.Services.AddJwtAuthentication(builder.Configuration);
 
     // Seeds demo accounts on host start (idempotent). See the hosted service for
     // why this is not done inline between Build() and Run().
@@ -56,6 +58,7 @@ try
 
     app.UseHttpsRedirection();
 
+    app.UseAuthentication();
     app.UseAuthorization();
 
     app.MapControllers();

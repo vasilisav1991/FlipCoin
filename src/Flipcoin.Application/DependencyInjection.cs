@@ -13,9 +13,7 @@ public static class DependencyInjection
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddScoped<RegisterUserHandler>();
-
-        // LoginUserHandler is registered in Phase 2.2, once IJwtTokenGenerator
-        // has an implementation — otherwise DI validation on build would fail.
+        services.AddScoped<LoginUserHandler>();
 
         return services;
     }
