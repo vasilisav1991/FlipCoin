@@ -75,9 +75,11 @@ try
     Log.Information("Starting Flipcoin API");
     app.Run();
 }
-// HostAbortedException is thrown by EF Core's design-time tooling to stop the
-// host after building it; it is expected, not a crash, so let it pass through.
-catch (Exception ex) when (ex is not HostAbortedException)
+// Let host-stopping signals pass through rather than reporting them as crashes:
+// HostAbortedException (EF Core design-time tooling) and StopTheHostException
+// (WebApplicationFactory's test host, thrown after the host is built).
+catch (Exception ex) when (ex is not HostAbortedException
+    && ex.GetType().Name != "StopTheHostException")
 {
     Log.Fatal(ex, "Flipcoin API terminated unexpectedly");
 }
@@ -86,3 +88,7 @@ finally
     // Flush any buffered log events before the process exits.
     Log.CloseAndFlush();
 }
+
+// Exposes the implicit Program class so the integration tests can host the API
+// with WebApplicationFactory<Program>.
+public partial class Program;
