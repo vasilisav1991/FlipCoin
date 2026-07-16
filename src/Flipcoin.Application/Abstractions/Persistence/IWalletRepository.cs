@@ -9,5 +9,8 @@ namespace Flipcoin.Application.Abstractions.Persistence;
 /// </summary>
 public interface IWalletRepository
 {
+    /// <summary>The wallet owned by the given user, or null (e.g. for admins).</summary>
+    Task<Wallet?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default);
+
     Task AddAsync(Wallet wallet, CancellationToken cancellationToken = default);
 }

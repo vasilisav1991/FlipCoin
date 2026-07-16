@@ -1,4 +1,5 @@
 using Flipcoin.Application.Auth;
+using Flipcoin.Application.Wallets;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Flipcoin.Application;
@@ -14,6 +15,8 @@ public static class DependencyInjection
     {
         services.AddScoped<RegisterUserHandler>();
         services.AddScoped<LoginUserHandler>();
+        services.AddScoped<GetMyWalletHandler>();
+        services.AddScoped<GetMyTransactionsHandler>();
 
         return services;
     }
