@@ -1,4 +1,5 @@
 using Flipcoin.Api.HostedServices;
+using Flipcoin.Application;
 using Flipcoin.Infrastructure;
 using Serilog;
 using Serilog.Events;
@@ -26,6 +27,7 @@ try
     var connectionString = builder.Configuration.GetConnectionString("Postgres")
         ?? throw new InvalidOperationException("Missing 'Postgres' connection string.");
     builder.Services.AddInfrastructure(connectionString);
+    builder.Services.AddApplication();
 
     // Seeds demo accounts on host start (idempotent). See the hosted service for
     // why this is not done inline between Build() and Run().

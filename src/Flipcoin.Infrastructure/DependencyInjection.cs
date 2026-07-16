@@ -1,4 +1,6 @@
+using Flipcoin.Application.Abstractions.Auth;
 using Flipcoin.Application.Abstractions.Persistence;
+using Flipcoin.Infrastructure.Auth;
 using Flipcoin.Infrastructure.Persistence;
 using Flipcoin.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +25,8 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IWalletRepository, WalletRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        services.AddSingleton<IPasswordHasher, PasswordHasher>();
 
         services.AddScoped<DatabaseSeeder>();
 

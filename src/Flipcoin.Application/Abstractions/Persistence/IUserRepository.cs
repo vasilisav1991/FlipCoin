@@ -12,5 +12,11 @@ public interface IUserRepository
     /// <summary>True if any user exists (used to keep seeding idempotent).</summary>
     Task<bool> AnyAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>True if a user with the given email already exists.</summary>
+    Task<bool> ExistsByEmailAsync(string email, CancellationToken cancellationToken = default);
+
+    /// <summary>The user with the given email, or null if none exists.</summary>
+    Task<User?> GetByEmailAsync(string email, CancellationToken cancellationToken = default);
+
     Task AddAsync(User user, CancellationToken cancellationToken = default);
 }

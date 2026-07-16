@@ -1,4 +1,5 @@
 using Flipcoin.Domain.Enums;
+using Flipcoin.Domain.Users;
 
 namespace Flipcoin.Domain.Entities;
 
@@ -36,7 +37,7 @@ public class User
             throw new ArgumentException("Password hash is required.", nameof(passwordHash));
 
         Id = Guid.NewGuid();
-        Email = email.Trim().ToLowerInvariant();
+        Email = EmailNormalization.Normalize(email);
         PasswordHash = passwordHash;
         Role = role;
         CreatedAt = DateTime.UtcNow;
