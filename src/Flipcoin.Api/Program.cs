@@ -1,4 +1,5 @@
 using Flipcoin.Api.Extensions;
+using Flipcoin.Api.ExceptionHandling;
 using Flipcoin.Api.HostedServices;
 using Flipcoin.Application;
 using Flipcoin.Infrastructure;
@@ -37,6 +38,10 @@ try
 
     builder.Services.AddControllers();
 
+    // Central exception -> ProblemDetails translation (see GlobalExceptionHandler).
+    builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+    builder.Services.AddProblemDetails();
+
     // Liveness endpoint (see MapHealthChecks below).
     builder.Services.AddHealthChecks();
 
@@ -45,6 +50,9 @@ try
     builder.Services.AddSwaggerGen();
 
     var app = builder.Build();
+
+    // Translate unhandled exceptions into ProblemDetails responses.
+    app.UseExceptionHandler();
 
     // One structured log line per HTTP request (method, path, status, elapsed).
     app.UseSerilogRequestLogging();
