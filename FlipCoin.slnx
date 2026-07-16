@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="CLAUDE.md" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Flipcoin.Api/Flipcoin.Api.csproj" />
+    <Project Path="src/Flipcoin.Application/Flipcoin.Application.csproj" />
+    <Project Path="src/Flipcoin.Client/Flipcoin.Client.csproj" />
+    <Project Path="src/Flipcoin.Domain/Flipcoin.Domain.csproj" />
+    <Project Path="src/Flipcoin.Infrastructure/Flipcoin.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Flipcoin.IntegrationTests/Flipcoin.IntegrationTests.csproj" />
+    <Project Path="tests/Flipcoin.UnitTests/Flipcoin.UnitTests.csproj" />
+  </Folder>
+</Solution>
