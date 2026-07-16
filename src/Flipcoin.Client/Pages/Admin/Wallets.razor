@@ -1,0 +1,60 @@
+@page "/admin/wallets"
+@attribute [Authorize(Roles = "Admin")]
+@inject ApiClient Api
+
+<PageTitle>Admin · Wallets</PageTitle>
+
+<h1 class="h3 mb-3">All wallets</h1>
+<AdminNav />
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_wallets is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Address</th>
+                    <th class="text-end">Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var w in _wallets)
+                {
+                    <tr>
+                        <td>@w.Email</td>
+                        <td><span class="badge @(w.Role == "Admin" ? "bg-dark" : "bg-primary")">@w.Role</span></td>
+                        <td>@(w.Address ?? "—")</td>
+                        <td class="text-end">@(w.Balance?.ToString("N2") ?? "—")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private List<AdminWallet>? _wallets;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _wallets = await Api.GetAdminWalletsAsync();
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+}

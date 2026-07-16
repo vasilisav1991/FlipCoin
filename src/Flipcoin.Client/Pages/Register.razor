@@ -1,0 +1,67 @@
+@page "/register"
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Register — Flipcoin</PageTitle>
+
+<h1 class="h3 mb-3 text-center">Create account</h1>
+
+<div class="card flip-card mx-auto" style="max-width: 420px;">
+    <div class="card-body">
+        <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText class="form-control" @bind-Value="_model.Email" autocomplete="username" />
+                <ValidationMessage For="() => _model.Email" class="text-danger small" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <InputText type="password" class="form-control" @bind-Value="_model.Password" autocomplete="new-password" />
+                <ValidationMessage For="() => _model.Password" class="text-danger small" />
+            </div>
+            @if (_error is not null)
+            {
+                <div class="alert alert-danger py-2">@_error</div>
+            }
+            <button class="btn btn-primary w-100" type="submit" disabled="@_busy">
+                @(_busy ? "Creating…" : "Create account")
+            </button>
+        </EditForm>
+        <p class="text-muted small mt-3 mb-0">New players start with 100 FLIP.</p>
+    </div>
+</div>
+
+@code {
+    private readonly Registration _model = new();
+    private string? _error;
+    private bool _busy;
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await AuthService.RegisterAsync(_model.Email, _model.Password);
+            Nav.NavigateTo("wallet");
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed class Registration
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required, MinLength(6, ErrorMessage = "Password must be at least 6 characters.")]
+        public string Password { get; set; } = string.Empty;
+    }
+}

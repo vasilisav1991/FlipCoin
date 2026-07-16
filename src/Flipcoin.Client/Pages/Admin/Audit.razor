@@ -1,0 +1,104 @@
+@page "/admin/transactions"
+@attribute [Authorize(Roles = "Admin")]
+@inject ApiClient Api
+
+<PageTitle>Admin · Audit log</PageTitle>
+
+<h1 class="h3 mb-3">Global audit log</h1>
+<AdminNav />
+
+<div class="d-flex align-items-center gap-2 mb-3">
+    <label class="small text-muted">Filter by type</label>
+    <select class="form-select form-select-sm" style="width: auto;" @bind="_type" @bind:after="ApplyFilterAsync">
+        <option value="">All</option>
+        <option value="Reward">Reward</option>
+        <option value="TransferIn">TransferIn</option>
+        <option value="TransferOut">TransferOut</option>
+        <option value="Stake">Stake</option>
+        <option value="Payout">Payout</option>
+    </select>
+</div>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_page is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>Wallet</th>
+                    <th>Type</th>
+                    <th class="text-end">Amount</th>
+                    <th>Counterparty</th>
+                    <th>When</th>
+                    <th class="text-end">Balance after</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in _page.Items)
+                {
+                    <tr>
+                        <td><code>@t.WalletAddress</code></td>
+                        <td>@t.Type</td>
+                        <td class="text-end">@t.Amount.ToString("N2")</td>
+                        <td>@(t.CounterpartyAddress ?? "—")</td>
+                        <td class="small text-muted">@t.Timestamp.ToLocalTime().ToString("g")</td>
+                        <td class="text-end">@t.BalanceAfter.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="small text-muted">Page @_pageNumber · @_page.TotalCount total</span>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_pageNumber <= 1)" @onclick="() => ChangePageAsync(-1)">Prev</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(!HasNext)" @onclick="() => ChangePageAsync(1)">Next</button>
+        </div>
+    </div>
+}
+
+@code {
+    private const int PageSize = 15;
+
+    private PagedResult<AdminTransaction>? _page;
+    private int _pageNumber = 1;
+    private string _type = string.Empty;
+    private string? _error;
+
+    private bool HasNext => _page is not null && _pageNumber * PageSize < _page.TotalCount;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _page = await Api.GetAdminTransactionsAsync(_pageNumber, PageSize,
+                string.IsNullOrEmpty(_type) ? null : _type);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task ApplyFilterAsync()
+    {
+        _pageNumber = 1;
+        await LoadAsync();
+    }
+
+    private async Task ChangePageAsync(int delta)
+    {
+        _pageNumber += delta;
+        await LoadAsync();
+    }
+}

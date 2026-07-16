@@ -1,0 +1,69 @@
+@page "/login"
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
+<PageTitle>Log in — Flipcoin</PageTitle>
+
+<h1 class="h3 mb-3 text-center">Log in</h1>
+
+<div class="card flip-card mx-auto" style="max-width: 420px;">
+    <div class="card-body">
+        <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <InputText class="form-control" @bind-Value="_model.Email" autocomplete="username" />
+                <ValidationMessage For="() => _model.Email" class="text-danger small" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Password</label>
+                <InputText type="password" class="form-control" @bind-Value="_model.Password" autocomplete="current-password" />
+                <ValidationMessage For="() => _model.Password" class="text-danger small" />
+            </div>
+            @if (_error is not null)
+            {
+                <div class="alert alert-danger py-2">@_error</div>
+            }
+            <button class="btn btn-primary w-100" type="submit" disabled="@_busy">
+                @(_busy ? "Logging in…" : "Log in")
+            </button>
+        </EditForm>
+        <p class="text-muted small mt-3 mb-0">
+            Seed accounts: <code>player1@flipcoin.local</code>, <code>admin@flipcoin.local</code> — password <code>Password123!</code>
+        </p>
+    </div>
+</div>
+
+@code {
+    private readonly Credentials _model = new();
+    private string? _error;
+    private bool _busy;
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            await AuthService.LoginAsync(_model.Email, _model.Password);
+            Nav.NavigateTo("wallet");
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed class Credentials
+    {
+        [Required, EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string Password { get; set; } = string.Empty;
+    }
+}

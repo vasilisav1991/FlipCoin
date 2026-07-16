@@ -1,0 +1,107 @@
+@page "/game"
+@attribute [Authorize]
+@inject ApiClient Api
+
+<PageTitle>Play — Flipcoin</PageTitle>
+
+<h1 class="h3 mb-3">Flip the coin</h1>
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+<div class="card flip-card mx-auto" style="max-width: 480px;">
+    <div class="card-body text-center">
+
+        <div class="coin @CoinClass">
+            <div class="coin-face coin-heads">H</div>
+            <div class="coin-face coin-tails">T</div>
+        </div>
+
+        @if (_result is not null && !_flipping)
+        {
+            <div class="@(_result.Won ? "text-success" : "text-danger") fw-bold fs-4 mt-2">
+                @(_result.Won ? "You won!" : "You lost")
+            </div>
+            <div class="text-muted">
+                Landed on <strong>@_result.Outcome</strong> ·
+                @(_result.Payout > 0 ? $"+{_result.Payout:N2} FLIP" : "no payout")
+            </div>
+        }
+
+        <div class="my-3">
+            <div class="text-muted small">Your choice</div>
+            <div class="btn-group" role="group">
+                <button class="btn @(_choice == "Heads" ? "btn-primary" : "btn-outline-primary")"
+                        @onclick='() => _choice = "Heads"' disabled="@_flipping">Heads</button>
+                <button class="btn @(_choice == "Tails" ? "btn-primary" : "btn-outline-primary")"
+                        @onclick='() => _choice = "Tails"' disabled="@_flipping">Tails</button>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label small text-muted">Stake (leave empty for a free practice flip)</label>
+            <input type="number" min="0" step="1" class="form-control text-center mx-auto" style="max-width: 200px;"
+                   @bind="_stake" placeholder="Practice" disabled="@_flipping" />
+        </div>
+
+        <button class="btn btn-lg btn-warning px-4" @onclick="PlayAsync" disabled="@_flipping">
+            @(_flipping ? "Flipping…" : "Flip")
+        </button>
+
+        <div class="mt-3 text-muted">
+            Balance: <strong>@_balance.ToString("N2")</strong> FLIP
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _choice = "Heads";
+    private decimal? _stake;
+    private decimal _balance;
+    private bool _flipping;
+    private PlayResult? _result;
+    private string? _error;
+
+    private string CoinClass => _flipping
+        ? "flipping"
+        : _result is null ? string.Empty : (_result.Outcome == "Tails" ? "show-tails" : "show-heads");
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _balance = (await Api.GetWalletAsync()).Balance;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task PlayAsync()
+    {
+        _error = null;
+        _result = null;
+        _flipping = true;
+
+        try
+        {
+            // Run the flip animation for at least a beat while the server decides.
+            var play = Api.PlayAsync(_choice, _stake);
+            await Task.WhenAll(play, Task.Delay(900));
+
+            _result = await play;
+            _balance = _result.NewBalance;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _flipping = false;
+        }
+    }
+}

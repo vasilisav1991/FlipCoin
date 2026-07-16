@@ -1,0 +1,94 @@
+@page "/transfer"
+@attribute [Authorize]
+@inject ApiClient Api
+
+<PageTitle>Transfer — Flipcoin</PageTitle>
+
+<h1 class="h3 mb-3">Transfer FLIP</h1>
+
+<div class="card flip-card mx-auto" style="max-width: 480px;">
+    <div class="card-body">
+        <EditForm Model="_model" OnValidSubmit="SubmitAsync">
+            <DataAnnotationsValidator />
+            <div class="mb-3">
+                <label class="form-label">Recipient wallet address</label>
+                <InputText class="form-control" @bind-Value="_model.ToAddress" placeholder="FLIP-xxxxxxxx" />
+                <ValidationMessage For="() => _model.ToAddress" class="text-danger small" />
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Amount</label>
+                <InputNumber class="form-control" @bind-Value="_model.Amount" />
+                <ValidationMessage For="() => _model.Amount" class="text-danger small" />
+            </div>
+
+            @if (_error is not null)
+            {
+                <div class="alert alert-danger py-2">@_error</div>
+            }
+            @if (_success is not null)
+            {
+                <div class="alert alert-success py-2">@_success</div>
+            }
+
+            <button class="btn btn-primary w-100" type="submit" disabled="@_busy">
+                @(_busy ? "Sending…" : "Send")
+            </button>
+        </EditForm>
+
+        <div class="mt-3 text-muted">
+            Your balance: <strong>@_balance.ToString("N2")</strong> FLIP
+        </div>
+    </div>
+</div>
+
+@code {
+    private readonly Model _model = new();
+    private decimal _balance;
+    private bool _busy;
+    private string? _error;
+    private string? _success;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _balance = (await Api.GetWalletAsync()).Balance;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        _busy = true;
+        _error = null;
+        _success = null;
+        try
+        {
+            var result = await Api.TransferAsync(_model.ToAddress, _model.Amount);
+            _balance = result.NewBalance;
+            _success = $"Sent {result.Amount:N2} FLIP to {result.ToAddress}. New balance {result.NewBalance:N2}.";
+            _model.ToAddress = string.Empty;
+            _model.Amount = 0;
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private sealed class Model
+    {
+        [Required]
+        public string ToAddress { get; set; } = string.Empty;
+
+        [Range(0.0001, double.MaxValue, ErrorMessage = "Amount must be greater than zero.")]
+        public decimal Amount { get; set; }
+    }
+}

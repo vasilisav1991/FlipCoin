@@ -1,0 +1,88 @@
+@page "/admin/game-rounds"
+@attribute [Authorize(Roles = "Admin")]
+@inject ApiClient Api
+
+<PageTitle>Admin · Game rounds</PageTitle>
+
+<h1 class="h3 mb-3">All game rounds</h1>
+<AdminNav />
+
+@if (_error is not null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_page is null)
+{
+    <p class="text-muted">Loading…</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead>
+                <tr>
+                    <th>Player</th>
+                    <th class="text-end">Stake</th>
+                    <th>Choice</th>
+                    <th>Outcome</th>
+                    <th>Result</th>
+                    <th class="text-end">Payout</th>
+                    <th>When</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var g in _page.Items)
+                {
+                    <tr>
+                        <td class="small text-muted">@g.UserId</td>
+                        <td class="text-end">@(g.Stake > 0 ? g.Stake.ToString("N2") : "practice")</td>
+                        <td>@g.Choice</td>
+                        <td>@g.Outcome</td>
+                        <td>
+                            <span class="badge @(g.Won ? "bg-success" : "bg-secondary")">@(g.Won ? "Won" : "Lost")</span>
+                        </td>
+                        <td class="text-end">@g.Payout.ToString("N2")</td>
+                        <td class="small text-muted">@g.PlayedAt.ToLocalTime().ToString("g")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <span class="small text-muted">Page @_pageNumber · @_page.TotalCount total</span>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_pageNumber <= 1)" @onclick="() => ChangePageAsync(-1)">Prev</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(!HasNext)" @onclick="() => ChangePageAsync(1)">Next</button>
+        </div>
+    </div>
+}
+
+@code {
+    private const int PageSize = 15;
+
+    private PagedResult<AdminGameRound>? _page;
+    private int _pageNumber = 1;
+    private string? _error;
+
+    private bool HasNext => _page is not null && _pageNumber * PageSize < _page.TotalCount;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            _page = await Api.GetAdminGameRoundsAsync(_pageNumber, PageSize);
+        }
+        catch (ApiException ex)
+        {
+            _error = ex.Message;
+        }
+    }
+
+    private async Task ChangePageAsync(int delta)
+    {
+        _pageNumber += delta;
+        await LoadAsync();
+    }
+}

@@ -40,6 +40,16 @@ try
 
     builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
+    // Allow the Blazor WASM client (a different origin) to call the API.
+    const string clientCorsPolicy = "ClientApp";
+    var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? Array.Empty<string>();
+    builder.Services.AddCors(options =>
+        options.AddPolicy(clientCorsPolicy, policy => policy
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()));
+
     builder.Services
         .AddControllers(options => options.Filters.Add<ValidationFilter>())
         .AddJsonOptions(options =>
@@ -75,6 +85,8 @@ try
     }
 
     app.UseHttpsRedirection();
+
+    app.UseCors(clientCorsPolicy);
 
     app.UseAuthentication();
     app.UseAuthorization();

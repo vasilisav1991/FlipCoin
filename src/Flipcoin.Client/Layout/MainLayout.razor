@@ -1,16 +1,43 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@inject AuthService AuthService
+@inject NavigationManager Nav
+
 <div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+    <nav class="navbar navbar-expand navbar-dark flip-navbar px-3">
+        <a class="navbar-brand fw-bold" href="">🪙 Flipcoin</a>
+        <AuthorizeView>
+            <Authorized>
+                <div class="navbar-nav me-auto">
+                    <NavLink class="nav-link" href="wallet">Wallet</NavLink>
+                    <NavLink class="nav-link" href="game">Game</NavLink>
+                    <NavLink class="nav-link" href="transfer">Transfer</NavLink>
+                    <AuthorizeView Roles="Admin" Context="admin">
+                        <NavLink class="nav-link" href="admin/wallets">Admin</NavLink>
+                    </AuthorizeView>
+                </div>
+                <div class="navbar-nav align-items-center">
+                    <span class="navbar-text me-3 small">@context.User.Identity?.Name</span>
+                    <button class="btn btn-outline-light btn-sm" @onclick="LogoutAsync">Logout</button>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="navbar-nav ms-auto">
+                    <NavLink class="nav-link" href="login">Login</NavLink>
+                    <NavLink class="nav-link" href="register">Register</NavLink>
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </nav>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
+    <main class="container py-4">
+        @Body
     </main>
 </div>
+
+@code {
+    private async Task LogoutAsync()
+    {
+        await AuthService.LogoutAsync();
+        Nav.NavigateTo("login");
+    }
+}
