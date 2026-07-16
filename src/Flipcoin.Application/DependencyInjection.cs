@@ -1,3 +1,4 @@
+using Flipcoin.Application.Admin;
 using Flipcoin.Application.Auth;
 using Flipcoin.Application.Game;
 using Flipcoin.Application.Transfers;
@@ -21,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<GetMyTransactionsHandler>();
         services.AddScoped<TransferHandler>();
         services.AddScoped<PlayGameHandler>();
+        services.AddScoped<AdminQueryService>();
 
         return services;
     }
