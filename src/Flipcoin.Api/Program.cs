@@ -36,7 +36,13 @@ try
     // why this is not done inline between Build() and Run().
     builder.Services.AddHostedService<DatabaseSeederHostedService>();
 
-    builder.Services.AddControllers();
+    builder.Services
+        .AddControllers()
+        .AddJsonOptions(options =>
+            // Bind and serialize enums by name (e.g. "Heads", "TransferOut")
+            // rather than by their numeric value.
+            options.JsonSerializerOptions.Converters.Add(
+                new System.Text.Json.Serialization.JsonStringEnumConverter()));
 
     // Central exception -> ProblemDetails translation (see GlobalExceptionHandler).
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

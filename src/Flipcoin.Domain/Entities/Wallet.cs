@@ -49,6 +49,18 @@ public class Wallet
     public Transaction ReceiveTransfer(decimal amount, string fromAddress)
         => Apply(amount, sign: +1, TransactionType.TransferIn, fromAddress);
 
+    /// <summary>Debits this wallet for a wager placed on a game round.</summary>
+    public Transaction PlaceStake(decimal amount)
+        => Apply(amount, sign: -1, TransactionType.Stake, counterpartyAddress: null);
+
+    /// <summary>Credits this wallet with winnings from a won staked round.</summary>
+    public Transaction ReceivePayout(decimal amount)
+        => Apply(amount, sign: +1, TransactionType.Payout, counterpartyAddress: null);
+
+    /// <summary>Credits this wallet with a practice-play reward.</summary>
+    public Transaction ReceiveReward(decimal amount)
+        => Apply(amount, sign: +1, TransactionType.Reward, counterpartyAddress: null);
+
     /// <summary>
     /// Applies a signed balance change and records the matching ledger entry.
     /// The amount is always positive; <paramref name="sign"/> decides credit (+1)

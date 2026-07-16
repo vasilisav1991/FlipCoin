@@ -1,6 +1,8 @@
 using Flipcoin.Application.Abstractions.Auth;
+using Flipcoin.Application.Abstractions.Game;
 using Flipcoin.Application.Abstractions.Persistence;
 using Flipcoin.Infrastructure.Auth;
+using Flipcoin.Infrastructure.Game;
 using Flipcoin.Infrastructure.Persistence;
 using Flipcoin.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -25,10 +27,12 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IWalletRepository, WalletRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IGameRoundRepository, GameRoundRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddSingleton<ICoinFlipper, CoinFlipper>();
 
         services.AddScoped<DatabaseSeeder>();
 
