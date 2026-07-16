@@ -1,8 +1,10 @@
 using Flipcoin.Api.Extensions;
 using Flipcoin.Api.ExceptionHandling;
 using Flipcoin.Api.HostedServices;
+using Flipcoin.Api.Validation;
 using Flipcoin.Application;
 using Flipcoin.Infrastructure;
+using FluentValidation;
 using Serilog;
 using Serilog.Events;
 
@@ -36,8 +38,10 @@ try
     // why this is not done inline between Build() and Run().
     builder.Services.AddHostedService<DatabaseSeederHostedService>();
 
+    builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
     builder.Services
-        .AddControllers()
+        .AddControllers(options => options.Filters.Add<ValidationFilter>())
         .AddJsonOptions(options =>
             // Bind and serialize enums by name (e.g. "Heads", "TransferOut")
             // rather than by their numeric value.

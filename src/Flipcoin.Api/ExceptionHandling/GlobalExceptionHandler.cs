@@ -2,6 +2,7 @@ using Flipcoin.Application.Auth;
 using Flipcoin.Application.Transfers;
 using Flipcoin.Application.Wallets;
 using Flipcoin.Domain.Exceptions;
+using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -33,6 +34,7 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         var (status, title) = exception switch
         {
+            ValidationException => (StatusCodes.Status400BadRequest, "Validation failed"),
             EmailAlreadyInUseException => (StatusCodes.Status409Conflict, "Email already in use"),
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid credentials"),
             InsufficientBalanceException => (StatusCodes.Status409Conflict, "Insufficient balance"),
@@ -51,18 +53,28 @@ public class GlobalExceptionHandler : IExceptionHandler
 
         httpContext.Response.StatusCode = status;
 
+        var problemDetails = new ProblemDetails
+        {
+            Status = status,
+            Title = title,
+            Detail = status == StatusCodes.Status500InternalServerError
+                ? "An unexpected error occurred."
+                : exception.Message
+        };
+
+        if (exception is ValidationException validationException)
+        {
+            // Field -> messages, so the client sees exactly what failed.
+            problemDetails.Extensions["errors"] = validationException.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+        }
+
         return await _problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
             Exception = exception,
-            ProblemDetails = new ProblemDetails
-            {
-                Status = status,
-                Title = title,
-                Detail = status == StatusCodes.Status500InternalServerError
-                    ? "An unexpected error occurred."
-                    : exception.Message
-            }
+            ProblemDetails = problemDetails
         });
     }
 }
