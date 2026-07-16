@@ -26,11 +26,25 @@ try
     builder.Services.AddDbContext<AppDbContext>(options =>
         options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
 
+    builder.Services.AddScoped<DatabaseSeeder>();
+
     builder.Services.AddControllers();
-    // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-    builder.Services.AddOpenApi();
+
+    // Liveness endpoint (see MapHealthChecks below).
+    builder.Services.AddHealthChecks();
+
+    // OpenAPI document + Swagger UI (browsable at /swagger in Development).
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
 
     var app = builder.Build();
+
+    // Seed demo accounts on startup. Idempotent, so it is safe to run every time.
+    using (var scope = app.Services.CreateScope())
+    {
+        var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
+        await seeder.SeedAsync();
+    }
 
     // One structured log line per HTTP request (method, path, status, elapsed).
     app.UseSerilogRequestLogging();
@@ -38,7 +52,8 @@ try
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
     {
-        app.MapOpenApi();
+        app.UseSwagger();
+        app.UseSwaggerUI();
     }
 
     app.UseHttpsRedirection();
@@ -46,6 +61,7 @@ try
     app.UseAuthorization();
 
     app.MapControllers();
+    app.MapHealthChecks("/health");
 
     Log.Information("Starting Flipcoin API");
     app.Run();
