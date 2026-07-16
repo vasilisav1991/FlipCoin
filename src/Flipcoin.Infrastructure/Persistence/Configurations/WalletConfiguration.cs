@@ -10,6 +10,7 @@ public class WalletConfiguration : IEntityTypeConfiguration<Wallet>
     public void Configure(EntityTypeBuilder<Wallet> builder)
     {
         builder.HasKey(w => w.Id);
+        builder.Property(w => w.Id).ValueGeneratedNever();
 
         builder.Property(w => w.Address)
             .IsRequired()

@@ -1,4 +1,5 @@
 using Flipcoin.Application.Auth;
+using Flipcoin.Application.Transfers;
 using Flipcoin.Application.Wallets;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -17,6 +18,7 @@ public static class DependencyInjection
         services.AddScoped<LoginUserHandler>();
         services.AddScoped<GetMyWalletHandler>();
         services.AddScoped<GetMyTransactionsHandler>();
+        services.AddScoped<TransferHandler>();
 
         return services;
     }

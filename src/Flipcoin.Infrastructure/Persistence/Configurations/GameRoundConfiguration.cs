@@ -9,6 +9,7 @@ public class GameRoundConfiguration : IEntityTypeConfiguration<GameRound>
     public void Configure(EntityTypeBuilder<GameRound> builder)
     {
         builder.HasKey(g => g.Id);
+        builder.Property(g => g.Id).ValueGeneratedNever();
 
         builder.Property(g => g.Stake)
             .HasPrecision(18, 4)

@@ -1,4 +1,7 @@
 using Flipcoin.Application.Auth;
+using Flipcoin.Application.Transfers;
+using Flipcoin.Application.Wallets;
+using Flipcoin.Domain.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,6 +35,10 @@ public class GlobalExceptionHandler : IExceptionHandler
         {
             EmailAlreadyInUseException => (StatusCodes.Status409Conflict, "Email already in use"),
             InvalidCredentialsException => (StatusCodes.Status401Unauthorized, "Invalid credentials"),
+            InsufficientBalanceException => (StatusCodes.Status409Conflict, "Insufficient balance"),
+            WalletNotFoundException => (StatusCodes.Status404NotFound, "Wallet not found"),
+            RecipientNotFoundException => (StatusCodes.Status404NotFound, "Recipient not found"),
+            SelfTransferException => (StatusCodes.Status400BadRequest, "Invalid transfer"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred")
         };

@@ -1,3 +1,6 @@
+using Flipcoin.Domain.Enums;
+using Flipcoin.Domain.Exceptions;
+
 namespace Flipcoin.Domain.Entities;
 
 /// <summary>
@@ -36,5 +39,39 @@ public class Wallet
         UserId = userId;
         Address = address;
         Balance = startingBalance;
+    }
+
+    /// <summary>Debits this wallet for coins sent to another wallet.</summary>
+    public Transaction SendTransfer(decimal amount, string toAddress)
+        => Apply(amount, sign: -1, TransactionType.TransferOut, toAddress);
+
+    /// <summary>Credits this wallet for coins received from another wallet.</summary>
+    public Transaction ReceiveTransfer(decimal amount, string fromAddress)
+        => Apply(amount, sign: +1, TransactionType.TransferIn, fromAddress);
+
+    /// <summary>
+    /// Applies a signed balance change and records the matching ledger entry.
+    /// The amount is always positive; <paramref name="sign"/> decides credit (+1)
+    /// or debit (-1). A debit that would make the balance negative is rejected,
+    /// so the wallet can never hold less than zero.
+    /// </summary>
+    private Transaction Apply(decimal amount, int sign, TransactionType type, string? counterpartyAddress)
+    {
+        if (amount <= 0m)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), "Amount must be positive.");
+        }
+
+        var newBalance = Balance + (sign * amount);
+        if (newBalance < 0m)
+        {
+            throw new InsufficientBalanceException(Balance, amount);
+        }
+
+        Balance = newBalance;
+
+        var transaction = new Transaction(Id, type, amount, counterpartyAddress, Balance);
+        _transactions.Add(transaction);
+        return transaction;
     }
 }

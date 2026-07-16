@@ -16,6 +16,9 @@ public class WalletRepository : IWalletRepository
     public Task<Wallet?> GetByUserIdAsync(Guid userId, CancellationToken cancellationToken = default)
         => _context.Wallets.FirstOrDefaultAsync(w => w.UserId == userId, cancellationToken);
 
+    public Task<Wallet?> GetByAddressAsync(string address, CancellationToken cancellationToken = default)
+        => _context.Wallets.FirstOrDefaultAsync(w => w.Address == address, cancellationToken);
+
     public async Task AddAsync(Wallet wallet, CancellationToken cancellationToken = default)
         => await _context.Wallets.AddAsync(wallet, cancellationToken);
 }
