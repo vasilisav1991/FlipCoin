@@ -1,5 +1,5 @@
-using Flipcoin.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using Flipcoin.Api.HostedServices;
+using Flipcoin.Infrastructure;
 using Serilog;
 using Serilog.Events;
 
@@ -23,10 +23,13 @@ try
 
     // Add services to the container.
 
-    builder.Services.AddDbContext<AppDbContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("Postgres")));
+    var connectionString = builder.Configuration.GetConnectionString("Postgres")
+        ?? throw new InvalidOperationException("Missing 'Postgres' connection string.");
+    builder.Services.AddInfrastructure(connectionString);
 
-    builder.Services.AddScoped<DatabaseSeeder>();
+    // Seeds demo accounts on host start (idempotent). See the hosted service for
+    // why this is not done inline between Build() and Run().
+    builder.Services.AddHostedService<DatabaseSeederHostedService>();
 
     builder.Services.AddControllers();
 
@@ -38,13 +41,6 @@ try
     builder.Services.AddSwaggerGen();
 
     var app = builder.Build();
-
-    // Seed demo accounts on startup. Idempotent, so it is safe to run every time.
-    using (var scope = app.Services.CreateScope())
-    {
-        var seeder = scope.ServiceProvider.GetRequiredService<DatabaseSeeder>();
-        await seeder.SeedAsync();
-    }
 
     // One structured log line per HTTP request (method, path, status, elapsed).
     app.UseSerilogRequestLogging();
@@ -66,7 +62,9 @@ try
     Log.Information("Starting Flipcoin API");
     app.Run();
 }
-catch (Exception ex)
+// HostAbortedException is thrown by EF Core's design-time tooling to stop the
+// host after building it; it is expected, not a crash, so let it pass through.
+catch (Exception ex) when (ex is not HostAbortedException)
 {
     Log.Fatal(ex, "Flipcoin API terminated unexpectedly");
 }
