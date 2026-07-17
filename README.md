@@ -10,7 +10,7 @@ The emphasis is **banking-grade discipline around money movement**: the server i
 
 - **Auth** — register / login with JWT bearer tokens and role claims (Player / Admin).
 - **Wallet** — balance, generated address (`FLIP-xxxxxxxx`), and paged transaction history. A user can only ever access their own wallet.
-- **Game (the Flip)** — choose heads/tails, optionally stake FLIP. The server decides the outcome with a cryptographic RNG. A staked win pays 2× the stake; a practice (no-stake) win pays a flat reward.
+- **Game (the Flip)** — choose heads/tails, optionally stake FLIP. The server decides the outcome with a cryptographic RNG. A staked win pays 2× the stake; a practice (no-stake) win pays a flat reward (supported by the API; the UI always plays staked).
 - **Transfers** — atomic wallet-to-wallet transfers with a full double-entry ledger.
 - **Admin** — audit views of all wallets, a filterable global transaction log, and all game rounds, gated by the Admin role.
 - **Real-time updates** — the API pushes balance changes to the owning user over SignalR, so a recipient sees an incoming transfer (and a player sees a game result) update live, without refreshing.
@@ -87,8 +87,6 @@ On startup the API waits for Postgres to be healthy, applies the EF Core migrati
 
 - **.NET 10 SDK** (built with `10.0.301`).
 - **PostgreSQL** running locally and reachable (default `localhost:5432`).
-
-### Getting started
 
 ### 1. Configure the database connection
 
@@ -181,20 +179,41 @@ dotnet test
 
 ## Design decisions
 
-<!--
-  This section is for the author to complete in their own words. Suggested
-  topics to cover (each was a real decision point during the build):
--->
+### Server-authoritative money & game outcomes
 
-- **Server-authoritative money & game outcomes** — _todo: why the client never decides anything._
-- **Ledger-style history** — _todo: every balance change writes an immutable Transaction with BalanceAfter._
-- **Ownership by construction** — _todo: user id comes only from the JWT subject; no endpoint accepts a user/wallet id, so "A can't read B's wallet" holds structurally._
-- **Atomic transfers** — _todo: debit + credit + both ledger entries in a single SaveChanges = one DB transaction._
-- **Guid keys generated in the domain (`ValueGeneratedNever`)** — _todo: non-enumerable ids + why this was needed for correct EF insert tracking._
-- **Clean Architecture dependency rule** — _todo: why interfaces live in Application and implementations in Infrastructure._
-- **Validation at two layers** — _todo: FluentValidation at the boundary + domain invariants as defense-in-depth._
-- **Cryptographic RNG for the flip** — _todo: `RandomNumberGenerator` vs `Random`._
-- **Practice reward rule** — _todo: chosen interpretation (practice win → +5, loss → 0)._
+The client never decides anything that matters. It only sends *intent* — "play heads with a stake of 10", "transfer 25 to this address" — and the server validates the request, flips the coin, moves the money, and returns the result. Anything computed in the browser (a balance, a coin flip, a payout) can be tampered with in dev tools, so the client is treated purely as a display layer. This is the single most important rule in the project; every other decision below supports it.
+
+### Ledger-style history
+
+Every balance change — game stake, payout, reward, transfer in, transfer out — writes an immutable `Transaction` row that also records `BalanceAfter`, the wallet's balance immediately after the change. Balances are therefore always explainable: you can replay any wallet's history and verify that each entry's `BalanceAfter` follows from the previous one. Transactions are never updated or deleted, which is what makes the admin audit log trustworthy.
+
+### Ownership by construction
+
+No endpoint accepts a user id or wallet id from the client. The current user is always resolved from the JWT `sub` claim, and handlers load *that user's* wallet. This means "user A cannot read user B's wallet" is not an `if` check that someone could forget — there is simply no input through which B's wallet can be requested. This property is pinned down by the flagship integration test.
+
+### Atomic transfers
+
+A transfer touches four things: debit the sender, credit the recipient, and write both ledger entries (`TransferOut` + `TransferIn`). The handler stages all four changes and commits them with a **single `SaveChanges`**, which EF Core wraps in one database transaction — so the transfer either fully happens or doesn't happen at all. There is no code path where money leaves one wallet without arriving in the other.
+
+### Guid keys generated in the domain (`ValueGeneratedNever`)
+
+Entities create their own `Guid` ids in their constructors instead of relying on database-generated keys. Two reasons: Guids are non-enumerable (an attacker can't iterate `/wallets/1`, `/wallets/2`, …), and a domain object is fully valid — with an identity — the moment it's constructed, before it ever touches the database. `ValueGeneratedNever()` tells EF Core the key is always supplied by the application, so EF correctly treats entities with a set key as *inserts* rather than assuming a non-empty key means the row already exists.
+
+### Clean Architecture dependency rule
+
+Dependencies point strictly inward: `Api → Infrastructure → Application → Domain`, and Domain references nothing. The Application layer defines the interfaces it needs (`IWalletRepository`, `IUnitOfWork`, `ICoinFlipper`, `IJwtTokenGenerator`) and Infrastructure implements them. The payoff is that all business rules — transfer rules, payout math, balance invariants — live in code that knows nothing about EF Core, HTTP, or JWTs, which makes them trivially unit-testable (the game tests swap in a deterministic coin flipper) and keeps controllers thin.
+
+### Validation at two layers
+
+FluentValidation runs at the API boundary and rejects malformed requests early with clear 400 responses ("amount must be greater than 0"). But the domain enforces its own invariants too — every debit on `Wallet` goes through a single private `Apply` method that throws `InsufficientBalanceException` regardless of what any validator said. Boundary validation is for good error messages; domain invariants are the actual safety net. No future code path (a new endpoint, a background job) can create a negative balance, because the rule lives in the one place all paths go through.
+
+### Cryptographic RNG for the flip
+
+The coin flip uses `RandomNumberGenerator.GetInt32(2)` rather than `Random`. `Random` is a deterministic pseudo-random generator — with enough observed outputs its future values can be predicted, which is unacceptable when the outcome pays out money. The cryptographic RNG is unpredictable by design. The same generator is used for wallet addresses. The cost (slightly slower than `Random`) is irrelevant at one call per game round.
+
+### Practice reward rule
+
+Practice play (no stake) needed an interpretation: I chose *win → flat +5 FLIP, loss → nothing*, so practice still has a real coin flip and a reason to care about the outcome, while staked play keeps the meaningful risk (2× payout vs. losing the stake). Practice play is effectively a small faucet, so in production it would be rate-limited — noted in [Limitations](#limitations--with-more-time).
 
 ---
 
