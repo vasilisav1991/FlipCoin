@@ -84,7 +84,13 @@ try
         app.UseSwaggerUI();
     }
 
-    app.UseHttpsRedirection();
+    // Not in Development: the WASM client is served over http and calls the API
+    // over http, and redirecting a cross-origin request to https breaks the
+    // browser fetch/CORS. In production TLS is terminated up front (reverse proxy).
+    if (!app.Environment.IsDevelopment())
+    {
+        app.UseHttpsRedirection();
+    }
 
     app.UseCors(clientCorsPolicy);
 
