@@ -1,4 +1,5 @@
 using Flipcoin.Application.Abstractions.Persistence;
+using Flipcoin.Application.Abstractions.RealTime;
 using Flipcoin.Application.Transfers;
 using Flipcoin.Application.Wallets;
 using Flipcoin.Domain.Entities;
@@ -11,8 +12,9 @@ public class TransferHandlerTests
 {
     private readonly Mock<IWalletRepository> _wallets = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
+    private readonly Mock<IWalletNotifier> _notifier = new();
 
-    private TransferHandler CreateHandler() => new(_wallets.Object, _unitOfWork.Object);
+    private TransferHandler CreateHandler() => new(_wallets.Object, _unitOfWork.Object, _notifier.Object);
 
     private static Wallet WalletFor(Guid userId, string address, decimal balance)
         => new(userId, address, balance);

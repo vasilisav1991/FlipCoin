@@ -1,5 +1,6 @@
 using Flipcoin.Application.Abstractions.Game;
 using Flipcoin.Application.Abstractions.Persistence;
+using Flipcoin.Application.Abstractions.RealTime;
 using Flipcoin.Application.Wallets;
 using Flipcoin.Domain.Entities;
 using Flipcoin.Domain.Exceptions;
@@ -23,17 +24,20 @@ public class PlayGameHandler
     private readonly IGameRoundRepository _gameRounds;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICoinFlipper _coinFlipper;
+    private readonly IWalletNotifier _notifier;
 
     public PlayGameHandler(
         IWalletRepository wallets,
         IGameRoundRepository gameRounds,
         IUnitOfWork unitOfWork,
-        ICoinFlipper coinFlipper)
+        ICoinFlipper coinFlipper,
+        IWalletNotifier notifier)
     {
         _wallets = wallets;
         _gameRounds = gameRounds;
         _unitOfWork = unitOfWork;
         _coinFlipper = coinFlipper;
+        _notifier = notifier;
     }
 
     public async Task<PlayGameResult> HandleAsync(PlayGameCommand command, CancellationToken cancellationToken = default)
@@ -79,6 +83,9 @@ public class PlayGameHandler
 
         // Round and any ledger entries persist together in one transaction.
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Push the new balance to the player in real time (best-effort).
+        await _notifier.WalletChangedAsync(command.UserId, wallet.Balance, cancellationToken);
 
         return new PlayGameResult(command.Choice, outcome, won, payout, wallet.Balance);
     }

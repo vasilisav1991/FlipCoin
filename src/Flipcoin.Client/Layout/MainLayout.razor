@@ -1,5 +1,7 @@
 @inherits LayoutComponentBase
 @inject AuthService AuthService
+@inject WalletState WalletState
+@inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Nav
 
 <div class="page">
@@ -16,6 +18,7 @@
                     </AuthorizeView>
                 </div>
                 <div class="navbar-nav align-items-center">
+                    <span class="navbar-text me-3"><span class="badge bg-warning text-dark"><LiveBalance /></span></span>
                     <span class="navbar-text me-3 small">@context.User.Identity?.Name</span>
                     <button class="btn btn-outline-light btn-sm" @onclick="LogoutAsync">Logout</button>
                 </div>
@@ -35,6 +38,18 @@
 </div>
 
 @code {
+    protected override async Task OnInitializedAsync()
+    {
+        // If the user is already signed in (e.g. after a page refresh), start the
+        // real-time wallet state. StartAsync is idempotent, so login also calling
+        // it is harmless.
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (state.User.Identity?.IsAuthenticated == true)
+        {
+            await WalletState.StartAsync();
+        }
+    }
+
     private async Task LogoutAsync()
     {
         await AuthService.LogoutAsync();

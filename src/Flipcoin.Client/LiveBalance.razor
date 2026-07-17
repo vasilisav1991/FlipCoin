@@ -1,0 +1,15 @@
+@implements IDisposable
+@inject WalletState WalletState
+
+@if (WalletState.HasWallet)
+{
+    <span>@WalletState.Balance.ToString("N2") FLIP</span>
+}
+
+@code {
+    protected override void OnInitialized() => WalletState.OnChange += Refresh;
+
+    private void Refresh() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => WalletState.OnChange -= Refresh;
+}

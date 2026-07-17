@@ -1,8 +1,10 @@
 using Flipcoin.Api.Extensions;
 using Flipcoin.Api.ExceptionHandling;
 using Flipcoin.Api.HostedServices;
+using Flipcoin.Api.RealTime;
 using Flipcoin.Api.Validation;
 using Flipcoin.Application;
+using Flipcoin.Application.Abstractions.RealTime;
 using Flipcoin.Infrastructure;
 using FluentValidation;
 using Serilog;
@@ -62,6 +64,10 @@ try
     builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
     builder.Services.AddProblemDetails();
 
+    // Real-time wallet updates over SignalR.
+    builder.Services.AddSignalR();
+    builder.Services.AddScoped<IWalletNotifier, SignalRWalletNotifier>();
+
     // Liveness endpoint (see MapHealthChecks below).
     builder.Services.AddHealthChecks();
 
@@ -99,6 +105,7 @@ try
 
     app.MapControllers();
     app.MapHealthChecks("/health");
+    app.MapHub<WalletHub>("/hubs/wallet");
 
     Log.Information("Starting Flipcoin API");
     app.Run();

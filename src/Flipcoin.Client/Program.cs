@@ -17,6 +17,7 @@ builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(apiBaseUr
 builder.Services.AddScoped<TokenStore>();
 builder.Services.AddScoped<ApiClient>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<WalletState>();
 
 // Authentication state comes from the stored JWT.
 builder.Services.AddScoped<JwtAuthenticationStateProvider>();

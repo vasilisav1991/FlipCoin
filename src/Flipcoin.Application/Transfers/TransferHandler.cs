@@ -1,4 +1,5 @@
 using Flipcoin.Application.Abstractions.Persistence;
+using Flipcoin.Application.Abstractions.RealTime;
 using Flipcoin.Application.Wallets;
 
 namespace Flipcoin.Application.Transfers;
@@ -13,11 +14,13 @@ public class TransferHandler
 {
     private readonly IWalletRepository _wallets;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IWalletNotifier _notifier;
 
-    public TransferHandler(IWalletRepository wallets, IUnitOfWork unitOfWork)
+    public TransferHandler(IWalletRepository wallets, IUnitOfWork unitOfWork, IWalletNotifier notifier)
     {
         _wallets = wallets;
         _unitOfWork = unitOfWork;
+        _notifier = notifier;
     }
 
     public async Task<TransferResult> HandleAsync(TransferCommand command, CancellationToken cancellationToken = default)
@@ -43,6 +46,10 @@ public class TransferHandler
         recipient.ReceiveTransfer(command.Amount, sender.Address);
 
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Push the new balances to both parties in real time (best-effort).
+        await _notifier.WalletChangedAsync(sender.UserId, sender.Balance, cancellationToken);
+        await _notifier.WalletChangedAsync(recipient.UserId, recipient.Balance, cancellationToken);
 
         return new TransferResult(recipient.Address, command.Amount, sender.Balance);
     }

@@ -1,5 +1,6 @@
 using Flipcoin.Application.Abstractions.Game;
 using Flipcoin.Application.Abstractions.Persistence;
+using Flipcoin.Application.Abstractions.RealTime;
 using Flipcoin.Application.Game;
 using Flipcoin.Domain.Entities;
 using Flipcoin.Domain.Enums;
@@ -14,9 +15,10 @@ public class PlayGameHandlerTests
     private readonly Mock<IGameRoundRepository> _gameRounds = new();
     private readonly Mock<IUnitOfWork> _unitOfWork = new();
     private readonly Mock<ICoinFlipper> _coinFlipper = new();
+    private readonly Mock<IWalletNotifier> _notifier = new();
 
     private PlayGameHandler CreateHandler() =>
-        new(_wallets.Object, _gameRounds.Object, _unitOfWork.Object, _coinFlipper.Object);
+        new(_wallets.Object, _gameRounds.Object, _unitOfWork.Object, _coinFlipper.Object, _notifier.Object);
 
     private Wallet SetupWallet(Guid userId, decimal balance)
     {

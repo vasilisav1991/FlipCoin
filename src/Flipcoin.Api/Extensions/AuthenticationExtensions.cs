@@ -43,6 +43,24 @@ public static class AuthenticationExtensions
                     // No leeway on expiry; tokens are valid strictly until 'exp'.
                     ClockSkew = TimeSpan.Zero
                 };
+
+                // Browsers can't set an Authorization header on a WebSocket, so
+                // the SignalR client sends the token as an access_token query
+                // param. Read it for hub requests.
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        if (!string.IsNullOrEmpty(accessToken) &&
+                            context.HttpContext.Request.Path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    }
+                };
             });
 
         services.AddAuthorization(options =>
