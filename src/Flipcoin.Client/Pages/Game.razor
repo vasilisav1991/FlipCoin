@@ -7,28 +7,19 @@
 
 <PageTitle>Flipcoin</PageTitle>
 
-<div class="flip-panel dash">
-    <aside class="dash-sidebar">
-        <div class="dash-brand"><span class="dash-emblem">F</span> Flipcoin</div>
-        <nav class="dash-nav">
-            @foreach (var s in Sections)
-            {
-                <button class="dash-nav-item @(_section == s.Key ? "active" : "")" @onclick="() => _section = s.Key">
-                    <span class="dot"></span> @s.Label
-                </button>
-            }
-        </nav>
-        <div class="dash-address">
-            <div class="mono-label">Wallet address</div>
-            <div class="mt-1 text-truncate">@(WalletState.Address ?? "—")</div>
-        </div>
-    </aside>
-
+<div class="flip-panel">
     <section class="dash-main">
         <div class="dash-head">
             <div>
                 <div class="mono-label">Available balance</div>
                 <div class="dash-balance">@WalletState.Balance.ToString("N2")<span class="unit">FLIP</span></div>
+                @if (WalletState.HasWallet)
+                {
+                    <div class="small text-muted mt-2 d-flex align-items-center gap-2">
+                        <code>@WalletState.Address</code>
+                        <button class="btn btn-sm btn-outline-secondary py-0" @onclick="CopyAddressAsync">@(_copied ? "Copied!" : "Copy")</button>
+                    </div>
+                }
             </div>
             <div class="status-pill"><span class="dot"></span> Server authoritative</div>
         </div>
@@ -39,139 +30,107 @@
             <div class="alert alert-danger">@_error</div>
         }
 
-        @if (_section == "play")
-        {
-            <div class="play-grid">
-                <div>
-                    <div class="coin @CoinClass">
-                        <div class="coin-face coin-heads">H</div>
-                        <div class="coin-face coin-tails">T</div>
-                    </div>
+        <div class="play-grid">
+            <div>
+                <div class="coin @CoinClass">
+                    <div class="coin-face coin-heads">H</div>
+                    <div class="coin-face coin-tails">T</div>
+                </div>
 
-                    @if (_result is not null && !_flipping)
+                @if (_result is not null && !_flipping)
+                {
+                    <div class="text-center mb-3">
+                        <span class="@(_result.Won ? "text-success" : "")" style="@(_result.Won ? "" : "color:var(--orange)")">
+                            Landed <strong>@_result.Outcome</strong> —
+                            @(_result.Won ? $"won +{_result.Payout:N2} FLIP" : "no payout")
+                        </span>
+                    </div>
+                }
+
+                <div class="choice-row mb-3">
+                    <button class="choice-btn @(_choice == "Heads" ? "active" : "")" @onclick='() => _choice = "Heads"' disabled="@_flipping">Heads</button>
+                    <button class="choice-btn @(_choice == "Tails" ? "active" : "")" @onclick='() => _choice = "Tails"' disabled="@_flipping">Tails</button>
+                </div>
+
+                <div class="d-flex justify-content-between mono-label mb-1">
+                    <span>Bet</span>
+                    <span>@(_bet is null ? "Practice" : $"{_bet:N2} FLIP")</span>
+                </div>
+                <div class="bet-row mb-2">
+                    @foreach (var amount in BetPresets)
                     {
-                        <div class="text-center mb-3">
-                            <span class="@(_result.Won ? "text-success" : "")" style="@(_result.Won ? "" : "color:var(--orange)")">
-                                Landed <strong>@_result.Outcome</strong> —
-                                @(_result.Won ? $"won +{_result.Payout:N2} FLIP" : "no payout")
-                            </span>
+                        <button class="bet-chip @(_bet == amount ? "active" : "")" @onclick="() => _bet = amount" disabled="@_flipping">@amount.ToString("N0")</button>
+                    }
+                </div>
+                <button class="btn btn-outline-secondary btn-sm w-100" @onclick="() => _bet = null" disabled="@_flipping">Practice flip (free)</button>
+
+                <button class="btn btn-flip w-100 mt-3 py-2" @onclick="PlayAsync" disabled="@_flipping">
+                    @(_flipping ? "Flipping…" : "Flip the coin")
+                </button>
+            </div>
+
+            <div class="d-flex flex-column gap-3">
+                <div class="flip-card p-3">
+                    <div class="fw-semibold mb-2">Recent ledger</div>
+                    @if (_ledger is null || _ledger.Count == 0)
+                    {
+                        <div class="text-muted small">No activity yet — flip to begin.</div>
+                    }
+                    else
+                    {
+                        @foreach (var t in _ledger.Take(6))
+                        {
+                            <div class="d-flex justify-content-between py-1 small">
+                                <span class="text-muted">@t.Type</span>
+                                <span>@t.Amount.ToString("N2")</span>
+                            </div>
+                        }
+                    }
+                </div>
+
+                <div>
+                    <button class="send-toggle @(_sendOpen ? "open" : "")" @onclick="() => _sendOpen = !_sendOpen">
+                        <span>Send FLIP</span>
+                        <span class="chevron @(_sendOpen ? "open" : "")">›</span>
+                    </button>
+                    @if (_sendOpen)
+                    {
+                        <div class="send-body">
+                            <EditForm Model="_send" OnValidSubmit="SendAsync">
+                                <DataAnnotationsValidator />
+                                <div class="mb-3">
+                                    <label class="mono-label">Recipient address</label>
+                                    <InputText class="form-control" @bind-Value="_send.ToAddress" placeholder="FLIP-xxxxxxxx" />
+                                    <ValidationMessage For="() => _send.ToAddress" class="text-danger small" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="mono-label">Amount</label>
+                                    <InputNumber class="form-control" @bind-Value="_send.Amount" />
+                                    <ValidationMessage For="() => _send.Amount" class="text-danger small" />
+                                </div>
+                                @if (_sendError is not null)
+                                {
+                                    <div class="alert alert-danger py-2">@_sendError</div>
+                                }
+                                @if (_sendSuccess is not null)
+                                {
+                                    <div class="alert alert-success py-2">@_sendSuccess</div>
+                                }
+                                <button class="btn btn-primary w-100" type="submit" disabled="@_sending">
+                                    @(_sending ? "Sending…" : "Send FLIP")
+                                </button>
+                            </EditForm>
                         </div>
                     }
-
-                    <div class="choice-row mb-3">
-                        <button class="choice-btn @(_choice == "Heads" ? "active" : "")" @onclick='() => _choice = "Heads"' disabled="@_flipping">Heads</button>
-                        <button class="choice-btn @(_choice == "Tails" ? "active" : "")" @onclick='() => _choice = "Tails"' disabled="@_flipping">Tails</button>
-                    </div>
-
-                    <div class="d-flex justify-content-between mono-label mb-1">
-                        <span>Bet</span>
-                        <span>@(_bet is null ? "Practice" : $"{_bet:N2} FLIP")</span>
-                    </div>
-                    <div class="bet-row mb-2">
-                        @foreach (var amount in BetPresets)
-                        {
-                            <button class="bet-chip @(_bet == amount ? "active" : "")" @onclick="() => _bet = amount" disabled="@_flipping">@amount.ToString("N0")</button>
-                        }
-                    </div>
-                    <button class="btn btn-outline-secondary btn-sm w-100" @onclick="() => _bet = null" disabled="@_flipping">Practice flip (free)</button>
-
-                    <button class="btn btn-flip w-100 mt-3 py-2" @onclick="PlayAsync" disabled="@_flipping">
-                        @(_flipping ? "Flipping…" : "Flip the coin")
-                    </button>
-                </div>
-
-                <div class="d-flex flex-column gap-3">
-                    <div class="flip-card p-3">
-                        <div class="fw-semibold mb-2">Recent ledger</div>
-                        @if (_ledger is null || _ledger.Count == 0)
-                        {
-                            <div class="text-muted small">No activity yet — flip to begin.</div>
-                        }
-                        else
-                        {
-                            @foreach (var t in _ledger.Take(5))
-                            {
-                                <div class="d-flex justify-content-between py-1 small">
-                                    <span class="text-muted">@t.Type</span>
-                                    <span>@t.Amount.ToString("N2")</span>
-                                </div>
-                            }
-                        }
-                    </div>
-                    <button class="flip-card p-3 d-flex justify-content-between align-items-center border-0 text-start"
-                            style="cursor: pointer;" @onclick='() => _section = "send"'>
-                        <span class="fw-semibold">Send FLIP</span>
-                        <span class="text-muted">›</span>
-                    </button>
                 </div>
             </div>
-        }
-        else if (_section == "wallet")
-        {
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <code class="fs-6">@WalletState.Address</code>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="CopyAddressAsync">@(_copied ? "Copied!" : "Copy")</button>
-            </div>
-            <div class="mono-label mb-2">Recent transactions</div>
-            @RenderLedger()
-            <a class="small" href="wallet">Open full paged history →</a>
-        }
-        else if (_section == "send")
-        {
-            <div style="max-width: 460px;">
-                <EditForm Model="_send" OnValidSubmit="SendAsync">
-                    <DataAnnotationsValidator />
-                    <div class="mb-3">
-                        <label class="mono-label">Recipient address</label>
-                        <InputText class="form-control" @bind-Value="_send.ToAddress" placeholder="FLIP-xxxxxxxx" />
-                        <ValidationMessage For="() => _send.ToAddress" class="text-danger small" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="mono-label">Amount</label>
-                        <InputNumber class="form-control" @bind-Value="_send.Amount" />
-                        <ValidationMessage For="() => _send.Amount" class="text-danger small" />
-                    </div>
-                    @if (_sendError is not null)
-                    {
-                        <div class="alert alert-danger py-2">@_sendError</div>
-                    }
-                    @if (_sendSuccess is not null)
-                    {
-                        <div class="alert alert-success py-2">@_sendSuccess</div>
-                    }
-                    <button class="btn btn-primary w-100" type="submit" disabled="@_sending">
-                        @(_sending ? "Sending…" : "Send FLIP")
-                    </button>
-                </EditForm>
-            </div>
-        }
-        else if (_section == "activity")
-        {
-            @if (_ledger is null)
-            {
-                <p class="text-muted">Loading…</p>
-            }
-            else if (_ledger.Count == 0)
-            {
-                <p class="text-muted">No activity yet.</p>
-            }
-            else
-            {
-                @RenderLedger()
-            }
-        }
+        </div>
     </section>
 </div>
 
 @code {
-    private static readonly (string Key, string Label)[] Sections =
-    {
-        ("play", "Play"), ("wallet", "Wallet"), ("send", "Send"), ("activity", "Activity")
-    };
-
     private static readonly decimal[] BetPresets = { 10m, 50m, 100m, 250m };
 
-    private string _section = "play";
     private string _choice = "Heads";
     private decimal? _bet = 50m;
     private bool _flipping;
@@ -180,6 +139,7 @@
     private bool _copied;
     private string? _error;
 
+    private bool _sendOpen;
     private readonly SendModel _send = new();
     private bool _sending;
     private string? _sendError;
@@ -271,39 +231,6 @@
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", WalletState.Address);
         _copied = true;
     }
-
-    private static string BadgeClass(string type) => type switch
-    {
-        "Reward" or "TransferIn" or "Payout" => "bg-success",
-        "TransferOut" or "Stake" => "bg-secondary",
-        _ => "bg-info"
-    };
-
-    private RenderFragment RenderLedger() =>@<div class="table-responsive">
-        <table class="table table-sm align-middle">
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th class="text-end">Amount</th>
-                    <th>Counterparty</th>
-                    <th>When</th>
-                    <th class="text-end">Balance after</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var t in _ledger!)
-                {
-                    <tr>
-                        <td><span class="badge @BadgeClass(t.Type)">@t.Type</span></td>
-                        <td class="text-end">@t.Amount.ToString("N2")</td>
-                        <td>@(t.CounterpartyAddress ?? "—")</td>
-                        <td class="small text-muted">@t.Timestamp.ToLocalTime().ToString("g")</td>
-                        <td class="text-end">@t.BalanceAfter.ToString("N2")</td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>;
 
     public void Dispose() => WalletState.OnChange -= OnWalletChanged;
 
