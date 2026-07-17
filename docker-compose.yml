@@ -1,4 +1,4 @@
-# Full local stack: `docker compose up --build`, then open http://localhost:8080.
+# Full local stack: `docker compose up --build`, then open http://localhost:8090.
 # Seeded logins: player1@flipcoin.local / player2@flipcoin.local /
 # admin@flipcoin.local, all with password Password123!.
 services:
@@ -24,8 +24,8 @@ services:
       context: .
       dockerfile: src/Flipcoin.Api/Dockerfile
     ports:
-      # Same host port the client's ApiBaseUrl points at (http://localhost:5181).
-      - "5181:8080"
+      # Same host port the client's ApiBaseUrl points at (http://localhost:8095).
+      - "8095:8080"
     environment:
       # Development gives us Swagger and skips the HTTPS redirect; the demo
       # stack is plain HTTP end to end. The connection string overrides the
@@ -44,7 +44,7 @@ services:
       context: .
       dockerfile: src/Flipcoin.Client/Dockerfile
     ports:
-      - "8080:80"
+      - "8090:80"
     depends_on:
       - api
 

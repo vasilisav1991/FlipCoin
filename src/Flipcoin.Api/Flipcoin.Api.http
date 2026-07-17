@@ -1,4 +1,4 @@
-@Flipcoin.Api_HostAddress = http://localhost:5181
+@Flipcoin.Api_HostAddress = http://localhost:8095
 
 GET {{Flipcoin.Api_HostAddress}}/weatherforecast/
 Accept: application/json

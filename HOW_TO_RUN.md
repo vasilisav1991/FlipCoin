@@ -60,7 +60,7 @@ Leave this terminal open — closing it (or pressing `Ctrl+C`) stops the app.
 
 Now open your browser at:
 
-### → **<http://localhost:8080>**
+### → **<http://localhost:8090>**
 
 ---
 
@@ -83,8 +83,8 @@ Suggested tour:
 
 Also available while the app is running:
 
-- **API documentation (Swagger)**: <http://localhost:5181/swagger> — browse and try every API endpoint.
-- **Health check**: <http://localhost:5181/health>
+- **API documentation (Swagger)**: <http://localhost:8095/swagger> — browse and try every API endpoint.
+- **Health check**: <http://localhost:8095/health>
 
 ---
 
@@ -111,7 +111,7 @@ Docker Desktop isn't running (or isn't installed). Start it and wait for "Engine
 Docker is in Windows-containers mode. Right-click the whale icon in the taskbar → **Switch to Linux containers…** and retry.
 
 **"port is already allocated" / "address already in use"**
-Something on your machine already uses port `8080` or `5181`. Stop that program, or edit `docker-compose.yml` and change the **left** number of a port mapping (e.g. `"8081:80"` under `client`), then browse to that port instead.
+Something on your machine already uses port `8090` or `8095`. Stop that program, or edit `docker-compose.yml` and change the **left** number of a port mapping (e.g. `"8081:80"` under `client`), then browse to that port instead.
 
 **The page loads but login says "Failed to fetch"**
 The API container probably isn't ready or has stopped. Check the terminal logs for `flipcoin-api-1` errors, or run `docker compose ps` — all three services should say "Up". `docker compose down -v` followed by `docker compose up --build` gives you a clean start.

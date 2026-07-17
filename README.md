@@ -67,14 +67,14 @@ cd FlipCoin
 docker compose up --build
 ```
 
-Then open **http://localhost:8080** and log in with a [seed account](#seed-accounts) (e.g. `player1@flipcoin.local` / `Password123!`).
+Then open **http://localhost:8090** and log in with a [seed account](#seed-accounts) (e.g. `player1@flipcoin.local` / `Password123!`).
 
 The compose stack runs three services:
 
 | Service | Image | URL |
 | --- | --- | --- |
-| `client` | Blazor WASM built by the .NET SDK, served by nginx | http://localhost:8080 |
-| `api` | multi-stage .NET build → ASP.NET runtime | http://localhost:5181 (Swagger at `/swagger`) |
+| `client` | Blazor WASM built by the .NET SDK, served by nginx | http://localhost:8090 |
+| `api` | multi-stage .NET build → ASP.NET runtime | http://localhost:8095 (Swagger at `/swagger`) |
 | `postgres` | `postgres:17-alpine`, named volume, healthcheck | not exposed to the host |
 
 On startup the API waits for Postgres to be healthy, applies the EF Core migrations, and seeds the demo accounts (idempotent). Wallet data survives restarts via the named volume; `docker compose down -v` resets everything.
@@ -108,9 +108,9 @@ The API reads its connection string from `src/Flipcoin.Api/appsettings.Developme
 dotnet run --project src/Flipcoin.Api --launch-profile http
 ```
 
-- API base URL: **http://localhost:5181**
-- Swagger UI: **http://localhost:5181/swagger**
-- Health check: **http://localhost:5181/health**
+- API base URL: **http://localhost:8095**
+- Swagger UI: **http://localhost:8095/swagger**
+- Health check: **http://localhost:8095/health**
 
 On startup the API **applies any pending migrations** (creating the `flipcoin` database on first run) and **seeds the demo accounts** (idempotent — nothing happens if users already exist).
 
