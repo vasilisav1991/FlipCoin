@@ -75,21 +75,40 @@
             </div>
 
             <div class="d-flex flex-column gap-3">
-                <div class="flip-card p-3">
-                    <div class="fw-semibold mb-2">Recent ledger</div>
-                    @if (_ledger is null || _ledger.Count == 0)
+                <div>
+                    <button class="send-toggle @(_activityOpen ? "open" : "")" @onclick="() => _activityOpen = !_activityOpen">
+                        <span>Activity</span>
+                        <span class="chevron @(_activityOpen ? "open" : "")">›</span>
+                    </button>
+                    @if (_activityOpen)
                     {
-                        <div class="text-muted small">No activity yet — flip to begin.</div>
-                    }
-                    else
-                    {
-                        @foreach (var t in _ledger.Take(6))
-                        {
-                            <div class="d-flex justify-content-between py-1 small">
-                                <span class="text-muted">@t.Type</span>
-                                <span>@t.Amount.ToString("N2")</span>
-                            </div>
-                        }
+                        <div class="send-body">
+                            @if (_ledger is null || _ledger.Count == 0)
+                            {
+                                <div class="text-muted small">No activity yet — flip to begin.</div>
+                            }
+                            else
+                            {
+                                <div class="activity-list">
+                                    @foreach (var t in _ledger.Take(10))
+                                    {
+                                        <div class="activity-item">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <span class="badge @BadgeClass(t.Type)">@t.Type</span>
+                                                <span class="fw-semibold">@Signed(t) FLIP</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between small text-muted mt-1">
+                                                <span class="text-truncate" style="max-width: 55%;">
+                                                    @(t.CounterpartyAddress is null ? "—" : $"↔ {t.CounterpartyAddress}")
+                                                </span>
+                                                <span>@t.Timestamp.ToLocalTime().ToString("dd MMM, HH:mm")</span>
+                                            </div>
+                                            <div class="small text-muted">Balance after: @t.BalanceAfter.ToString("N2")</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
                     }
                 </div>
 
@@ -105,8 +124,22 @@
                                 <DataAnnotationsValidator />
                                 <div class="mb-3">
                                     <label class="mono-label">Recipient address</label>
-                                    <InputText class="form-control" @bind-Value="_send.ToAddress" placeholder="FLIP-xxxxxxxx" />
+                                    <InputText class="form-control" @bind-Value="_send.ToAddress" placeholder="FLIP-xxxxxxxx"
+                                               @onfocus="() => _recentOpen = true" autocomplete="off" />
                                     <ValidationMessage For="() => _send.ToAddress" class="text-danger small" />
+                                    @if (_recentOpen && RecentAddresses.Any())
+                                    {
+                                        <div class="recent-addr mt-1">
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <span class="mono-label">Recently used</span>
+                                                <button type="button" class="btn-close-recent" @onclick="() => _recentOpen = false">✕</button>
+                                            </div>
+                                            @foreach (var addr in RecentAddresses)
+                                            {
+                                                <button type="button" class="recent-addr-item" @onclick="() => PickAddress(addr)">@addr</button>
+                                            }
+                                        </div>
+                                    }
                                 </div>
                                 <div class="mb-3">
                                     <label class="mono-label">Amount</label>
@@ -151,11 +184,22 @@
     private bool _copied;
     private string? _error;
 
+    private bool _activityOpen = true;
+
     private bool _sendOpen;
+    private bool _recentOpen;
     private readonly SendModel _send = new();
     private bool _sending;
     private string? _sendError;
     private string? _sendSuccess;
+
+    // Addresses this user has recently sent to (from their own TransferOut entries).
+    private IEnumerable<string> RecentAddresses =>
+        (_ledger ?? Enumerable.Empty<TransactionDto>())
+            .Where(t => t.Type == "TransferOut" && !string.IsNullOrEmpty(t.CounterpartyAddress))
+            .Select(t => t.CounterpartyAddress!)
+            .Distinct()
+            .Take(5);
 
     private string CoinClass => _flipping
         ? "flipping"
@@ -247,6 +291,12 @@
         }
     }
 
+    private void PickAddress(string address)
+    {
+        _send.ToAddress = address;
+        _recentOpen = false;
+    }
+
     private async Task CopyAddressAsync()
     {
         if (WalletState.Address is null)
@@ -257,6 +307,20 @@
         await JS.InvokeVoidAsync("navigator.clipboard.writeText", WalletState.Address);
         _copied = true;
     }
+
+    // Credits are shown as +, debits as -.
+    private static string Signed(TransactionDto t)
+    {
+        var debit = t.Type is "TransferOut" or "Stake";
+        return $"{(debit ? "-" : "+")}{t.Amount:N2}";
+    }
+
+    private static string BadgeClass(string type) => type switch
+    {
+        "Reward" or "TransferIn" or "Payout" => "bg-success",
+        "TransferOut" or "Stake" => "bg-secondary",
+        _ => "bg-info"
+    };
 
     public void Dispose() => WalletState.OnChange -= OnWalletChanged;
 

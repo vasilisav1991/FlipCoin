@@ -396,6 +396,67 @@ hr, .flip-divider {
     background: var(--panel);
 }
 
+/* ---- Activity feed ---- */
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 380px;
+    overflow-y: auto;
+}
+
+.activity-item {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    background: var(--panel-2);
+}
+
+    .activity-item .text-truncate {
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+    }
+
+/* ---- Recently used addresses ---- */
+.recent-addr {
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--panel-2);
+    padding: 0.5rem;
+}
+
+.recent-addr-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.4rem 0.5rem;
+    border: none;
+    background: transparent;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+    .recent-addr-item:hover {
+        background: var(--panel-3);
+        color: var(--gold-2);
+    }
+
+.btn-close-recent {
+    border: none;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    line-height: 1;
+    font-size: 0.75rem;
+}
+
+    .btn-close-recent:hover {
+        color: var(--text);
+    }
+
 /* ---- Coin ---- */
 .coin {
     width: 190px;
