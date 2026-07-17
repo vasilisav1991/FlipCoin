@@ -59,6 +59,8 @@ The Domain project compiles with zero package references. The Application layer 
 
 The only prerequisite is **Docker** (Docker Desktop on Windows/macOS, in Linux-containers mode). No .NET SDK, no PostgreSQL install.
 
+> New to Docker? **[HOW_TO_RUN.md](HOW_TO_RUN.md)** is a step-by-step guide that assumes nothing — install, run, log in, reset, troubleshooting.
+
 ```bash
 git clone <this repo>
 cd FlipCoin
