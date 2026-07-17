@@ -13,6 +13,7 @@ The emphasis is **banking-grade discipline around money movement**: the server i
 - **Game (the Flip)** — choose heads/tails, optionally stake FLIP. The server decides the outcome with a cryptographic RNG. A staked win pays 2× the stake; a practice (no-stake) win pays a flat reward.
 - **Transfers** — atomic wallet-to-wallet transfers with a full double-entry ledger.
 - **Admin** — audit views of all wallets, a filterable global transaction log, and all game rounds, gated by the Admin role.
+- **Real-time updates** — the API pushes balance changes to the owning user over SignalR, so a recipient sees an incoming transfer (and a player sees a game result) update live, without refreshing.
 - **Blazor WebAssembly client** — a standalone SPA that talks to the API over HTTP.
 
 ---
@@ -24,6 +25,7 @@ The emphasis is **banking-grade discipline around money movement**: the server i
 | Backend | .NET 10 Web API (C#) |
 | Data | EF Core + PostgreSQL |
 | Frontend | Blazor WebAssembly (standalone) |
+| Real-time | SignalR (server → client wallet updates) |
 | Auth | JWT with role claims; passwords hashed with ASP.NET Core `PasswordHasher<T>` |
 | Validation | FluentValidation |
 | Logging | Serilog (structured, console) |
