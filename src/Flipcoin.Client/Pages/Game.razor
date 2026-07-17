@@ -54,17 +54,22 @@
 
                 <div class="d-flex justify-content-between mono-label mb-1">
                     <span>Bet</span>
-                    <span>@(_bet is null ? "Practice" : $"{_bet:N2} FLIP")</span>
+                    <span>@_bet.ToString("N2") FLIP</span>
                 </div>
                 <div class="bet-row mb-2">
                     @foreach (var amount in BetPresets)
                     {
-                        <button class="bet-chip @(_bet == amount ? "active" : "")" @onclick="() => _bet = amount" disabled="@_flipping">@amount.ToString("N0")</button>
+                        <button class="bet-chip @(_bet == amount ? "active" : "")" @onclick="() => _bet = amount"
+                                disabled="@(_flipping || amount > WalletState.Balance)">@amount.ToString("N0")</button>
                     }
                 </div>
-                <button class="btn btn-outline-secondary btn-sm w-100" @onclick="() => _bet = null" disabled="@_flipping">Practice flip (free)</button>
 
-                <button class="btn btn-flip w-100 mt-3 py-2" @onclick="PlayAsync" disabled="@_flipping">
+                @if (_bet > WalletState.Balance)
+                {
+                    <div class="small" style="color: var(--orange);">Insufficient balance for this bet.</div>
+                }
+
+                <button class="btn btn-flip w-100 mt-3 py-2" @onclick="PlayAsync" disabled="@(_flipping || _bet > WalletState.Balance)">
                     @(_flipping ? "Flipping…" : "Flip the coin")
                 </button>
             </div>
@@ -107,6 +112,12 @@
                                     <label class="mono-label">Amount</label>
                                     <InputNumber class="form-control" @bind-Value="_send.Amount" />
                                     <ValidationMessage For="() => _send.Amount" class="text-danger small" />
+                                    @if (_send.Amount > WalletState.Balance)
+                                    {
+                                        <div class="small mt-1" style="color: var(--orange);">
+                                            Exceeds your balance (@WalletState.Balance.ToString("N2") FLIP).
+                                        </div>
+                                    }
                                 </div>
                                 @if (_sendError is not null)
                                 {
@@ -116,7 +127,8 @@
                                 {
                                     <div class="alert alert-success py-2">@_sendSuccess</div>
                                 }
-                                <button class="btn btn-primary w-100" type="submit" disabled="@_sending">
+                                <button class="btn btn-primary w-100" type="submit"
+                                        disabled="@(_sending || _send.Amount <= 0 || _send.Amount > WalletState.Balance)">
                                     @(_sending ? "Sending…" : "Send FLIP")
                                 </button>
                             </EditForm>
@@ -132,7 +144,7 @@
     private static readonly decimal[] BetPresets = { 10m, 50m, 100m, 250m };
 
     private string _choice = "Heads";
-    private decimal? _bet = 50m;
+    private decimal _bet = 50m;
     private bool _flipping;
     private PlayResult? _result;
     private List<TransactionDto>? _ledger;
@@ -176,6 +188,13 @@
 
     private async Task PlayAsync()
     {
+        // Guard client-side so we don't fire a request that can only fail; the
+        // server re-validates the stake regardless.
+        if (_bet > WalletState.Balance)
+        {
+            return;
+        }
+
         _error = null;
         _result = null;
         _flipping = true;
@@ -199,6 +218,13 @@
 
     private async Task SendAsync()
     {
+        // Don't send a request that can only fail; the server re-validates too.
+        if (_send.Amount > WalletState.Balance)
+        {
+            _sendError = "Insufficient balance for this transfer.";
+            return;
+        }
+
         _sending = true;
         _sendError = null;
         _sendSuccess = null;
