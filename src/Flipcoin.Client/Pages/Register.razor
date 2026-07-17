@@ -44,7 +44,7 @@
         try
         {
             await AuthService.RegisterAsync(_model.Email, _model.Password);
-            Nav.NavigateTo("wallet");
+            Nav.NavigateTo("game");
         }
         catch (ApiException ex)
         {
