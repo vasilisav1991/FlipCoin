@@ -1,0 +1,9 @@
+# Keep image build contexts small and reproducible: exclude build output,
+# IDE state, and local git history from what is sent to the Docker daemon.
+**/bin/
+**/obj/
+**/.vs/
+.git/
+.claude/
+README.md
+CLAUDE.md

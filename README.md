@@ -31,6 +31,7 @@ The emphasis is **banking-grade discipline around money movement**: the server i
 | Logging | Serilog (structured, console) |
 | API docs | Swagger / OpenAPI |
 | Tests | xUnit + Moq (unit), `WebApplicationFactory` (integration) |
+| Containers | multi-stage Dockerfiles + docker-compose (postgres, api, client) |
 
 ---
 
@@ -54,23 +55,38 @@ The Domain project compiles with zero package references. The Application layer 
 
 ---
 
-## Prerequisites
+## Quick start (Docker — recommended)
 
-- **.NET 10 SDK** (built with `10.0.301`).
-- **PostgreSQL** running locally and reachable (default `localhost:5432`).
-- **EF Core CLI tools** (for applying migrations):
+The only prerequisite is **Docker** (Docker Desktop on Windows/macOS, in Linux-containers mode). No .NET SDK, no PostgreSQL install.
 
-  ```bash
-  dotnet tool install --global dotnet-ef
-  # or, if already installed:
-  dotnet tool update --global dotnet-ef
-  ```
+```bash
+git clone <this repo>
+cd FlipCoin
+docker compose up --build
+```
 
-> This project runs against a **local PostgreSQL instance** (no Docker).
+Then open **http://localhost:8080** and log in with a [seed account](#seed-accounts) (e.g. `player1@flipcoin.local` / `Password123!`).
+
+The compose stack runs three services:
+
+| Service | Image | URL |
+| --- | --- | --- |
+| `client` | Blazor WASM built by the .NET SDK, served by nginx | http://localhost:8080 |
+| `api` | multi-stage .NET build → ASP.NET runtime | http://localhost:5181 (Swagger at `/swagger`) |
+| `postgres` | `postgres:17-alpine`, named volume, healthcheck | not exposed to the host |
+
+On startup the API waits for Postgres to be healthy, applies the EF Core migrations, and seeds the demo accounts (idempotent). Wallet data survives restarts via the named volume; `docker compose down -v` resets everything.
 
 ---
 
-## Getting started
+## Running locally without Docker
+
+### Prerequisites
+
+- **.NET 10 SDK** (built with `10.0.301`).
+- **PostgreSQL** running locally and reachable (default `localhost:5432`).
+
+### Getting started
 
 ### 1. Configure the database connection
 
@@ -82,26 +98,9 @@ The API reads its connection string from `src/Flipcoin.Api/appsettings.Developme
 }
 ```
 
-The `flipcoin` database is created automatically when you apply migrations (below) if it doesn't already exist.
-
 > The dev connection string and JWT signing key live in `appsettings.Development.json` for convenience. In production these would come from user-secrets / environment variables / a secrets manager (see [Limitations](#limitations--with-more-time)).
 
-### 2. Apply the database migrations
-
-```bash
-# from the repository root
-ASPNETCORE_ENVIRONMENT=Development dotnet ef database update \
-  --project src/Flipcoin.Infrastructure \
-  --startup-project src/Flipcoin.Api
-```
-
-On Windows PowerShell:
-
-```powershell
-$env:ASPNETCORE_ENVIRONMENT="Development"; dotnet ef database update --project src/Flipcoin.Infrastructure --startup-project src/Flipcoin.Api
-```
-
-### 3. Run the API
+### 2. Run the API
 
 ```bash
 dotnet run --project src/Flipcoin.Api --launch-profile http
@@ -111,9 +110,9 @@ dotnet run --project src/Flipcoin.Api --launch-profile http
 - Swagger UI: **http://localhost:5181/swagger**
 - Health check: **http://localhost:5181/health**
 
-On first start the API **seeds demo accounts** (idempotent — nothing happens if users already exist).
+On startup the API **applies any pending migrations** (creating the `flipcoin` database on first run) and **seeds the demo accounts** (idempotent — nothing happens if users already exist).
 
-### 4. Run the client
+### 3. Run the client
 
 In a second terminal:
 
@@ -205,7 +204,6 @@ These were conscious scope choices, noted for production readiness:
 - **Minimal auth** — no refresh tokens or token revocation; a single short-lived access token by design.
 - **Concurrency** — wallet balance has no optimistic-concurrency token. Concurrent money movement on the same wallet should use a `rowversion`/`xmin` concurrency token (and/or row locking).
 - **Rate limiting** — practice play is a coin faucet; it should be rate-limited.
-- **Migrations on startup** — migrations are applied manually via `dotnet ef database update`; auto-migrate-on-startup was left out deliberately.
-- **Integration test database** — tests use the EF in-memory provider (no Docker). Testcontainers with real PostgreSQL would be more faithful.
-- **Containerization** — no Docker/compose (descoped); a multi-stage build + `docker compose up` would make a one-command clean-clone run.
+- **Migrations on startup** — the API auto-applies migrations when it starts, which keeps the demo one-command. With multiple API instances this is a race; production would apply migrations as a deploy step instead.
+- **Integration test database** — tests use the EF in-memory provider. Testcontainers with real PostgreSQL would be more faithful.
 - **Pagination** — offset-based; keyset pagination would scale better for large audit logs.

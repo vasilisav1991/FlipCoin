@@ -1,0 +1,52 @@
+# Full local stack: `docker compose up --build`, then open http://localhost:8080.
+# Seeded logins: player1@flipcoin.local / player2@flipcoin.local /
+# admin@flipcoin.local, all with password Password123!.
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: flipcoin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      # Named volume so wallet data survives `docker compose down` / restarts.
+      - pgdata:/var/lib/postgresql/data
+    # No host port mapping: only the API talks to Postgres, over the compose
+    # network. This also avoids clashing with a Postgres already on 5432.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flipcoin"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: src/Flipcoin.Api/Dockerfile
+    ports:
+      # Same host port the client's ApiBaseUrl points at (http://localhost:5181).
+      - "5181:8080"
+    environment:
+      # Development gives us Swagger and skips the HTTPS redirect; the demo
+      # stack is plain HTTP end to end. The connection string overrides the
+      # localhost one in appsettings.Development.json ("postgres" is the
+      # service name, resolved by compose's internal DNS).
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=flipcoin;Username=postgres;Password=postgres
+    depends_on:
+      postgres:
+        # Wait for pg_isready, not just for the container to exist — the API
+        # applies migrations on startup and needs a reachable database.
+        condition: service_healthy
+
+  client:
+    build:
+      context: .
+      dockerfile: src/Flipcoin.Client/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
