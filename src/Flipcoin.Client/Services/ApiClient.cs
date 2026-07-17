@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Flipcoin.Client.Auth;
 using Flipcoin.Client.Models;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 namespace Flipcoin.Client.Services;
 
@@ -68,6 +69,10 @@ public class ApiClient
     private async Task<T> SendAsync<T>(HttpMethod method, string uri, object? body = null)
     {
         using var request = new HttpRequestMessage(method, uri);
+
+        // Always hit the API for fresh data; don't let the browser serve a
+        // cached GET response (which would show stale balances/history).
+        request.SetBrowserRequestCache(BrowserRequestCache.NoStore);
 
         var token = await _tokenStore.GetTokenAsync();
         if (!string.IsNullOrWhiteSpace(token))
