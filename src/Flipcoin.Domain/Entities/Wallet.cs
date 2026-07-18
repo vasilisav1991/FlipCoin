@@ -5,9 +5,9 @@ namespace Flipcoin.Domain.Entities;
 
 /// <summary>
 /// A player's holding of FLIP. One wallet per user (1:1). The balance is a
-/// <see cref="decimal"/> — never a floating-point type — and can never be
-/// constructed negative. Debit/credit behaviour that mutates the balance and
-/// writes ledger entries is added in Phase 3, alongside the use cases that need it.
+/// <see cref="decimal"/> — never a floating-point type — and can never go
+/// negative: every debit and credit funnels through the single
+/// <see cref="Apply"/> method, which also writes the matching ledger entry.
 /// </summary>
 public class Wallet
 {

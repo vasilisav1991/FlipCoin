@@ -3,7 +3,7 @@ namespace Flipcoin.Application.Auth;
 /// <summary>
 /// Thrown by login when the email is unknown or the password is wrong. The same
 /// exception is used for both cases so the API cannot be used to discover which
-/// emails are registered. Mapped to HTTP 401 by the exception middleware in Phase 4.
+/// emails are registered. Mapped to HTTP 401 by the global exception handler.
 /// </summary>
 public class InvalidCredentialsException : Exception
 {

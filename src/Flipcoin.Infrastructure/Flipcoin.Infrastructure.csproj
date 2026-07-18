@@ -5,6 +5,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Explicit EF Core reference pins the whole EF graph to one version; the
+         Npgsql provider would otherwise pull an older transitive EF version. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="10.0.10" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.2" />

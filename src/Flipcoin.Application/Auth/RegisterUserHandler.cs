@@ -37,8 +37,8 @@ public class RegisterUserHandler
         RegisterUserCommand command,
         CancellationToken cancellationToken = default)
     {
-        // Minimal guard here; richer rules (email format, password policy) come
-        // with FluentValidation in Phase 4.
+        // Minimal guard here; richer rules (email format, password policy) are
+        // enforced by FluentValidation at the API boundary.
         if (string.IsNullOrWhiteSpace(command.Password) || command.Password.Length < MinPasswordLength)
         {
             throw new ArgumentException(
