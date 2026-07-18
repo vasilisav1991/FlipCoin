@@ -41,7 +41,7 @@ Clean Architecture with the dependency rule pointing strictly inward.
 
 ```
 src/
-  Flipcoin.Domain          Entities, value objects, domain rules/exceptions. References nothing.
+  Flipcoin.Domain          Entities, domain rules/exceptions. References nothing.
   Flipcoin.Application     Use cases (handlers), repository & service interfaces, DTOs. References Domain.
   Flipcoin.Infrastructure  EF Core (DbContext, configurations, migrations, repositories), auth, RNG. References Application.
   Flipcoin.Api             Controllers, request DTOs, middleware, DI, Swagger. References Application + Infrastructure.
@@ -62,7 +62,7 @@ The only prerequisite is **Docker** (Docker Desktop on Windows/macOS, in Linux-c
 > New to Docker? **[HOW_TO_RUN.md](HOW_TO_RUN.md)** is a step-by-step guide that assumes nothing — install, run, log in, reset, troubleshooting.
 
 ```bash
-git clone <this repo>
+git clone https://github.com/vasilisav1991/FlipCoin.git
 cd FlipCoin
 docker compose up --build
 ```

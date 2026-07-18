@@ -1,6 +1,8 @@
 <Solution>
   <Folder Name="/Solution Items/">
     <File Path="CLAUDE.md" />
+    <File Path="README.md" />
+    <File Path="docker-compose.yml" />
   </Folder>
   <Folder Name="/src/">
     <Project Path="src/Flipcoin.Api/Flipcoin.Api.csproj" />

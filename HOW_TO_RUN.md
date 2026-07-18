@@ -24,10 +24,10 @@ Docker Desktop is a free application that runs the app's three components (datab
 
 ## Step 2 — Get the code
 
-**If you were given a link to the repository:**
+**If you have git:**
 
 ```
-git clone <repository-url>
+git clone https://github.com/vasilisav1991/FlipCoin.git
 cd FlipCoin
 ```
 
