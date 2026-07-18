@@ -24,5 +24,15 @@ public class AppDbContext : DbContext
     {
         // Discovers and applies UserConfiguration, WalletConfiguration, etc.
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        // Postgres's built-in xmin row version guards wallets against lost
+        // updates: a save whose read row has since changed throws
+        // DbUpdateConcurrencyException (surfaced as 409). Provider-specific, so
+        // skipped for the InMemory provider the integration tests run on —
+        // those tests do not exercise this behaviour.
+        if (Database.IsNpgsql())
+        {
+            modelBuilder.Entity<Wallet>().Property<uint>("xmin").IsRowVersion();
+        }
     }
 }

@@ -5,6 +5,7 @@ using Flipcoin.Domain.Exceptions;
 using FluentValidation;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace Flipcoin.Api.ExceptionHandling;
 
@@ -41,6 +42,7 @@ public class GlobalExceptionHandler : IExceptionHandler
             WalletNotFoundException => (StatusCodes.Status404NotFound, "Wallet not found"),
             RecipientNotFoundException => (StatusCodes.Status404NotFound, "Recipient not found"),
             SelfTransferException => (StatusCodes.Status400BadRequest, "Invalid transfer"),
+            DbUpdateConcurrencyException => (StatusCodes.Status409Conflict, "Concurrent update"),
             ArgumentException => (StatusCodes.Status400BadRequest, "Invalid request"),
             _ => (StatusCodes.Status500InternalServerError, "An unexpected error occurred")
         };
@@ -57,9 +59,16 @@ public class GlobalExceptionHandler : IExceptionHandler
         {
             Status = status,
             Title = title,
-            Detail = status == StatusCodes.Status500InternalServerError
-                ? "An unexpected error occurred."
-                : exception.Message
+            Detail = exception switch
+            {
+                // EF's own message describes rows and statements; say what the
+                // caller can act on instead.
+                DbUpdateConcurrencyException =>
+                    "The wallet was modified by another operation. Please retry.",
+                _ when status == StatusCodes.Status500InternalServerError =>
+                    "An unexpected error occurred.",
+                _ => exception.Message
+            }
         };
 
         if (exception is ValidationException validationException)

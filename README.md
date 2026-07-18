@@ -207,6 +207,10 @@ Dependencies point strictly inward: `Api → Infrastructure → Application → 
 
 FluentValidation runs at the API boundary and rejects malformed requests early with clear 400 responses ("amount must be greater than 0"). But the domain enforces its own invariants too — every debit on `Wallet` goes through a single private `Apply` method that throws `InsufficientBalanceException` regardless of what any validator said. Boundary validation is for good error messages; domain invariants are the actual safety net. No future code path (a new endpoint, a background job) can create a negative balance, because the rule lives in the one place all paths go through.
 
+### Optimistic concurrency on wallets (`xmin`)
+
+Both money-moving handlers read a wallet, mutate it in memory, and save — which, unguarded, allows a classic lost update: two concurrent requests against the same wallet could each read the same starting balance and the second save would silently overwrite the first. To close this, the `Wallets` table maps PostgreSQL's built-in `xmin` system column as an EF Core concurrency token. Every Postgres row already carries `xmin` (it changes on every write), so no new column is needed; EF appends `WHERE xmin = <read value>` to its UPDATEs, and if the row changed since it was read, `SaveChanges` throws `DbUpdateConcurrencyException`, which the exception middleware surfaces as a **409 Conflict** telling the caller to retry. Detect-and-reject was chosen over an automatic retry loop: for interactive actions (a game play, a transfer) replaying the request is the caller's decision, and the losing request has done no partial work — the transaction rolled back whole. Note the mapping is Postgres-specific, so it's applied only when running on Npgsql; the InMemory-based integration tests do not exercise it.
+
 ### Cryptographic RNG for the flip
 
 The coin flip uses `RandomNumberGenerator.GetInt32(2)` rather than `Random`. `Random` is a deterministic pseudo-random generator — with enough observed outputs its future values can be predicted, which is unacceptable when the outcome pays out money. The cryptographic RNG is unpredictable by design. The same generator is used for wallet addresses. The cost (slightly slower than `Random`) is irrelevant at one call per game round.
@@ -219,7 +223,6 @@ These were conscious scope choices, noted for production readiness:
 
 - **Secrets in config** — the dev DB password and JWT key are in `appsettings.Development.json`. Production should use user-secrets / environment variables / a secrets manager.
 - **Minimal auth** — no refresh tokens or token revocation; a single short-lived access token by design.
-- **Concurrency** — wallet balance has no optimistic-concurrency token. Concurrent money movement on the same wallet should use a `rowversion`/`xmin` concurrency token (and/or row locking).
 - **Migrations on startup** — the API auto-applies migrations when it starts, which keeps the demo one-command. With multiple API instances this is a race; production would apply migrations as a deploy step instead.
-- **Integration test database** — tests use the EF in-memory provider. Testcontainers with real PostgreSQL would be more faithful.
+- **Integration test database** — tests use the EF in-memory provider, which enforces neither the unique indexes nor the `xmin` concurrency token. Testcontainers with real PostgreSQL would be more faithful.
 - **Pagination** — offset-based; keyset pagination would scale better for large audit logs.
