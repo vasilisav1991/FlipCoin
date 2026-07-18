@@ -8,8 +8,15 @@
             <h1 class="display-5">🪙 Flipcoin</h1>
             <p class="text-muted">Welcome back, @context.User.Identity?.Name.</p>
             <div class="d-flex gap-2 justify-content-center mt-3">
-                <a class="btn btn-primary" href="game">Open the console</a>
-                <a class="btn btn-outline-primary" href="wallet">My wallet</a>
+                @if (context.User.IsInRole("Admin"))
+                {
+                    <a class="btn btn-primary" href="admin/wallets">Open the admin dashboard</a>
+                }
+                else
+                {
+                    <a class="btn btn-primary" href="game">Open the console</a>
+                    <a class="btn btn-outline-primary" href="wallet">My wallet</a>
+                }
             </div>
         </div>
     </Authorized>

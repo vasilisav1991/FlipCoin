@@ -10,15 +10,22 @@
         <AuthorizeView>
             <Authorized>
                 <div class="navbar-nav me-auto">
-                    <NavLink class="nav-link" href="game">Console</NavLink>
-                    <NavLink class="nav-link" href="wallet">Wallet</NavLink>
-                    <NavLink class="nav-link" href="transfer">Transfer</NavLink>
-                    <AuthorizeView Roles="Admin" Context="admin">
+                    @if (context.User.IsInRole("Admin"))
+                    {
                         <NavLink class="nav-link" href="admin/wallets">Admin</NavLink>
-                    </AuthorizeView>
+                    }
+                    else
+                    {
+                        <NavLink class="nav-link" href="game">Console</NavLink>
+                        <NavLink class="nav-link" href="wallet">Wallet</NavLink>
+                        <NavLink class="nav-link" href="transfer">Transfer</NavLink>
+                    }
                 </div>
                 <div class="navbar-nav align-items-center">
-                    <span class="navbar-text me-3"><span class="badge bg-warning text-dark"><LiveBalance /></span></span>
+                    @if (!context.User.IsInRole("Admin"))
+                    {
+                        <span class="navbar-text me-3"><span class="badge bg-warning text-dark"><LiveBalance /></span></span>
+                    }
                     <span class="navbar-text me-3 small">@context.User.Identity?.Name</span>
                     <button class="btn btn-outline-light btn-sm" @onclick="LogoutAsync">Logout</button>
                 </div>
@@ -44,7 +51,7 @@
         // real-time wallet state. StartAsync is idempotent, so login also calling
         // it is harmless.
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (state.User.Identity?.IsAuthenticated == true)
+        if (state.User.Identity?.IsAuthenticated == true && !state.User.IsInRole("Admin"))
         {
             await WalletState.StartAsync();
         }

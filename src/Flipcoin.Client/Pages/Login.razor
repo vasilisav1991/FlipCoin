@@ -1,5 +1,6 @@
 @page "/login"
 @inject AuthService AuthService
+@inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Nav
 
 <PageTitle>Log in — Flipcoin</PageTitle>
@@ -28,9 +29,14 @@
                 @(_busy ? "Logging in…" : "Log in")
             </button>
         </EditForm>
-        <p class="text-muted small mt-3 mb-0">
-            Seed accounts: <code>player1@flipcoin.local</code>, <code>admin@flipcoin.local</code> — password <code>Password123!</code>
-        </p>
+        <div class="seed-accounts mt-3">
+            <div class="mono-label mb-2">Seed accounts</div>
+            <div class="seed-group">Players</div>
+            <div class="seed-row"><code>player1@flipcoin.local</code><span>password: <code>Password123!</code></span></div>
+            <div class="seed-row"><code>player2@flipcoin.local</code><span>password: <code>Password123!</code></span></div>
+            <div class="seed-group mt-2">Admin</div>
+            <div class="seed-row"><code>admin@flipcoin.local</code><span>password: <code>Password123!</code></span></div>
+        </div>
     </div>
 </div>
 
@@ -46,7 +52,8 @@
         try
         {
             await AuthService.LoginAsync(_model.Email, _model.Password);
-            Nav.NavigateTo("game");
+            var state = await AuthStateProvider.GetAuthenticationStateAsync();
+            Nav.NavigateTo(state.User.IsInRole("Admin") ? "admin/wallets" : "game");
         }
         catch (ApiException ex)
         {

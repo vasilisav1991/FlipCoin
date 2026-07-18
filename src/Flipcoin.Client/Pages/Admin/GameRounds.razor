@@ -17,8 +17,9 @@ else if (_page is null)
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-sm align-middle">
+    <div class="card flip-card mb-3">
+        <div class="card-body table-responsive">
+            <table class="table table-sm align-middle mb-0">
             <thead>
                 <tr>
                     <th>Player</th>
@@ -45,8 +46,9 @@ else
                         <td class="small text-muted">@g.PlayedAt.ToLocalTime().ToString("g")</td>
                     </tr>
                 }
-            </tbody>
-        </table>
+                </tbody>
+            </table>
+        </div>
     </div>
     <div class="d-flex justify-content-between align-items-center">
         <span class="small text-muted">Page @_pageNumber · @_page.TotalCount total</span>

@@ -17,28 +17,30 @@ else if (_wallets is null)
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-sm align-middle">
-            <thead>
-                <tr>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Address</th>
-                    <th class="text-end">Balance</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var w in _wallets)
-                {
+    <div class="card flip-card">
+        <div class="card-body table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead>
                     <tr>
-                        <td>@w.Email</td>
-                        <td><span class="badge @(w.Role == "Admin" ? "bg-dark" : "bg-primary")">@w.Role</span></td>
-                        <td>@(w.Address ?? "—")</td>
-                        <td class="text-end">@(w.Balance?.ToString("N2") ?? "—")</td>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Address</th>
+                        <th class="text-end">Balance</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @foreach (var w in _wallets)
+                    {
+                        <tr>
+                            <td>@w.Email</td>
+                            <td><span class="badge @(w.Role == "Admin" ? "bg-secondary" : "bg-info")">@w.Role</span></td>
+                            <td>@if (w.Address is not null) { <code>@w.Address</code> } else { <span>—</span> }</td>
+                            <td class="text-end">@(w.Balance?.ToString("N2") ?? "—")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
     </div>
 }
 
