@@ -2,13 +2,11 @@
 
 Recent notable changes, newest first. Each entry maps to one commit.
 
-## Unreleased
-
-- **Game: manual bet input** — the bet amount is a free-entry field again; the preset chips (10/50/100/250) now quick-fill the same field. The flip button stays disabled for a zero, negative, or over-balance bet.
-- **Game: practice play removed end-to-end** — the API previously still accepted a no-stake round paying a flat +5 FLIP even though the UI no longer offered it. A stake is now required and must be positive (enforced at the API boundary, in the use case, and in the domain), the `Reward` transaction type is gone, and the admin Game Rounds page no longer shows "practice" rounds. Tests and README updated to match.
-
 ## 2026-07-18
 
+- `56c1090` — Game changes, in two parts:
+  - **Manual bet input** — the bet amount is a free-entry field again; the preset chips (10/50/100/250) now quick-fill the same field. The flip button stays disabled for a zero, negative, or over-balance bet.
+  - **Practice play removed end-to-end** — the API previously still accepted a no-stake round paying a flat +5 FLIP even though the UI no longer offered it. A stake is now required and must be positive (enforced at the API boundary, in the use case, and in the domain), the `Reward` transaction type is gone, and the admin Game Rounds page no longer shows "practice" rounds. Tests, README, and CLAUDE.md updated to match.
 - `0d78d8d` — Cleanup pass: removed the template `.http` file, tightened README wording, added the repository URL.
 - `1802726` — Client polish: themed form labels, admin-only navigation, restyled admin pages, clearer seed-account presentation.
 - `8f285de` — Pre-submission polish: unified EF Core package versions, made comments timeless, switched to a generic dev password.
