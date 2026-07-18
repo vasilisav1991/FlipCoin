@@ -223,6 +223,8 @@ These were conscious scope choices, noted for production readiness:
 
 - **Secrets in config** — the dev DB password and JWT key are in `appsettings.Development.json`. Production should use user-secrets / environment variables / a secrets manager.
 - **Minimal auth** — no refresh tokens or token revocation; a single short-lived access token by design.
+- **No TLS** — the demo stack speaks plain HTTP end to end (browser → client → API → Postgres). Production would terminate TLS at a reverse proxy and require SSL on the database connection.
+- **No encryption at rest** — the Postgres volume is unencrypted; production would use a managed database with disk encryption.
 - **Migrations on startup** — the API auto-applies migrations when it starts, which keeps the demo one-command. With multiple API instances this is a race; production would apply migrations as a deploy step instead.
 - **Integration test database** — tests use the EF in-memory provider, which enforces neither the unique indexes nor the `xmin` concurrency token. Testcontainers with real PostgreSQL would be more faithful.
 - **Pagination** — offset-based; keyset pagination would scale better for large audit logs.
