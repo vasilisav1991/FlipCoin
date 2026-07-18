@@ -145,7 +145,7 @@ else
 
     private static string BadgeClass(string type) => type switch
     {
-        "Reward" or "TransferIn" or "Payout" => "bg-success",
+        "TransferIn" or "Payout" => "bg-success",
         "TransferOut" or "Stake" => "bg-secondary",
         _ => "bg-info"
     };

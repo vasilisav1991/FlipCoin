@@ -17,7 +17,7 @@ public class Transaction
 
     /// <summary>
     /// The other wallet's address for transfers (TransferIn/TransferOut); null for
-    /// Reward/Stake/Payout which have no counterparty.
+    /// Stake/Payout which have no counterparty.
     /// </summary>
     public string? CounterpartyAddress { get; private set; }
 

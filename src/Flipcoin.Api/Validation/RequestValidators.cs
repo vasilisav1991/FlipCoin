@@ -40,8 +40,6 @@ public class PlayGameRequestValidator : AbstractValidator<PlayGameRequest>
     public PlayGameRequestValidator()
     {
         RuleFor(x => x.Choice).IsInEnum();
-        // Stake is optional (practice), but if supplied it must be positive.
-        When(x => x.Stake.HasValue, () =>
-            RuleFor(x => x.Stake!.Value).GreaterThan(0m));
+        RuleFor(x => x.Stake).GreaterThan(0m);
     }
 }

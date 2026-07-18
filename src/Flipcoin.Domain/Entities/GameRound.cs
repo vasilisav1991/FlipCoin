@@ -4,16 +4,16 @@ namespace Flipcoin.Domain.Entities;
 
 /// <summary>
 /// A single, server-decided coin flip. Records what the player chose, the outcome
-/// the server produced, the stake (0 for practice play), and the payout. Whether
-/// the round was won is derived from choice == outcome, so it can never disagree
-/// with the recorded sides.
+/// the server produced, the stake, and the payout. Whether the round was won is
+/// derived from choice == outcome, so it can never disagree with the recorded
+/// sides.
 /// </summary>
 public class GameRound
 {
     public Guid Id { get; private set; }
     public Guid UserId { get; private set; }
 
-    /// <summary>Amount wagered. Zero for a practice round.</summary>
+    /// <summary>Amount wagered.</summary>
     public decimal Stake { get; private set; }
 
     public CoinSide Choice { get; private set; }
@@ -32,8 +32,8 @@ public class GameRound
     {
         if (userId == Guid.Empty)
             throw new ArgumentException("UserId is required.", nameof(userId));
-        if (stake < 0m)
-            throw new ArgumentOutOfRangeException(nameof(stake), "Stake cannot be negative.");
+        if (stake <= 0m)
+            throw new ArgumentOutOfRangeException(nameof(stake), "Stake must be positive.");
         if (payout < 0m)
             throw new ArgumentOutOfRangeException(nameof(payout), "Payout cannot be negative.");
 

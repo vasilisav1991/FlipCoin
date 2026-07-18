@@ -57,10 +57,6 @@ public class Wallet
     public Transaction ReceivePayout(decimal amount)
         => Apply(amount, sign: +1, TransactionType.Payout, counterpartyAddress: null);
 
-    /// <summary>Credits this wallet with a practice-play reward.</summary>
-    public Transaction ReceiveReward(decimal amount)
-        => Apply(amount, sign: +1, TransactionType.Reward, counterpartyAddress: null);
-
     /// <summary>
     /// Applies a signed balance change and records the matching ledger entry.
     /// The amount is always positive; <paramref name="sign"/> decides credit (+1)

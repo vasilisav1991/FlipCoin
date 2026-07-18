@@ -10,7 +10,7 @@ The emphasis is **banking-grade discipline around money movement**: the server i
 
 - **Auth** — register / login with JWT bearer tokens and role claims (Player / Admin).
 - **Wallet** — balance, generated address (`FLIP-xxxxxxxx`), and paged transaction history. A user can only ever access their own wallet.
-- **Game (the Flip)** — choose heads/tails, optionally stake FLIP. The server decides the outcome with a cryptographic RNG. A staked win pays 2× the stake; a practice (no-stake) win pays a flat reward (supported by the API; the UI always plays staked).
+- **Game (the Flip)** — choose heads/tails and stake FLIP. The server decides the outcome with a cryptographic RNG. A win pays 2× the stake; a loss forfeits it.
 - **Transfers** — atomic wallet-to-wallet transfers with a full double-entry ledger.
 - **Admin** — audit views of all wallets, a filterable global transaction log, and all game rounds, gated by the Admin role.
 - **Real-time updates** — the API pushes balance changes to the owning user over SignalR, so a recipient sees an incoming transfer (and a player sees a game result) update live, without refreshing.
@@ -144,7 +144,7 @@ All seeded accounts share the password **`Password123!`**.
 | POST | `/api/auth/login` | anonymous | Returns a JWT. |
 | GET | `/api/wallet` | player | My wallet (balance, address). |
 | GET | `/api/wallet/transactions?page&pageSize` | player | My transaction history (paged). |
-| POST | `/api/game/play` | player | `{ choice, stake? }` → server decides → result + new balance. |
+| POST | `/api/game/play` | player | `{ choice, stake }` → server decides → result + new balance. |
 | POST | `/api/transfers` | player | `{ toAddress, amount }` → atomic transfer. |
 | GET | `/api/admin/wallets` | admin | All users + balances. |
 | GET | `/api/admin/transactions?type&page&pageSize` | admin | Global audit log (filterable). |
@@ -211,10 +211,6 @@ FluentValidation runs at the API boundary and rejects malformed requests early w
 
 The coin flip uses `RandomNumberGenerator.GetInt32(2)` rather than `Random`. `Random` is a deterministic pseudo-random generator — with enough observed outputs its future values can be predicted, which is unacceptable when the outcome pays out money. The cryptographic RNG is unpredictable by design. The same generator is used for wallet addresses. The cost (slightly slower than `Random`) is irrelevant at one call per game round.
 
-### Practice reward rule
-
-Practice play (no stake) needed an interpretation: I chose *win → flat +5 FLIP, loss → nothing*, so practice still has a real coin flip and a reason to care about the outcome, while staked play keeps the meaningful risk (2× payout vs. losing the stake). Practice play is effectively a small faucet, so in production it would be rate-limited — noted in [Limitations](#limitations--with-more-time).
-
 ---
 
 ## Limitations / with more time
@@ -224,7 +220,6 @@ These were conscious scope choices, noted for production readiness:
 - **Secrets in config** — the dev DB password and JWT key are in `appsettings.Development.json`. Production should use user-secrets / environment variables / a secrets manager.
 - **Minimal auth** — no refresh tokens or token revocation; a single short-lived access token by design.
 - **Concurrency** — wallet balance has no optimistic-concurrency token. Concurrent money movement on the same wallet should use a `rowversion`/`xmin` concurrency token (and/or row locking).
-- **Rate limiting** — practice play is a coin faucet; it should be rate-limited.
 - **Migrations on startup** — the API auto-applies migrations when it starts, which keeps the demo one-command. With multiple API instances this is a race; production would apply migrations as a deploy step instead.
 - **Integration test database** — tests use the EF in-memory provider. Testcontainers with real PostgreSQL would be more faithful.
 - **Pagination** — offset-based; keyset pagination would scale better for large audit logs.

@@ -31,7 +31,7 @@ You are my **assistant**, not the driver. I review, approve, and take ownership 
 - **Money is `decimal`.** Never float/double for amounts, anywhere.
 - **Balances can never go negative.** Enforced in the domain layer, not just in validation or UI.
 - **Transfers are atomic.** Debit + credit + transaction records happen in one database transaction — all or nothing.
-- **Ledger-style history.** Every balance change produces an immutable Transaction record (types: Reward, TransferIn, TransferOut, Stake, Payout).
+- **Ledger-style history.** Every balance change produces an immutable Transaction record (types: TransferIn, TransferOut, Stake, Payout).
 - **Users can only access their own wallet/data.** Ownership enforced server-side on every endpoint. Admin role sees all, holds no funds, cannot play.
 - **Game RNG uses `RandomNumberGenerator`** (cryptographic), generated server-side per round.
 - **No real blockchain.** Wallet address is a generated identifier (e.g. `FLIP-7f3a9c21`), unique per wallet.
@@ -69,8 +69,8 @@ tests/
 ### Domain model (initial — we may refine at checkpoints)
 - **User**: Id, Email (unique), PasswordHash, Role (Player|Admin), CreatedAt
 - **Wallet**: Id, UserId (1:1), Address (unique, generated), Balance (decimal)
-- **Transaction**: Id, WalletId, Type (Reward|TransferIn|TransferOut|Stake|Payout), Amount, CounterpartyAddress (nullable), Timestamp, BalanceAfter
-- **GameRound**: Id, UserId, Stake (0 for practice), Choice, Outcome, Won (bool), Payout, PlayedAt
+- **Transaction**: Id, WalletId, Type (TransferIn|TransferOut|Stake|Payout), Amount, CounterpartyAddress (nullable), Timestamp, BalanceAfter
+- **GameRound**: Id, UserId, Stake, Choice, Outcome, Won (bool), Payout, PlayedAt
 
 ### API surface (target)
 ```
@@ -78,7 +78,7 @@ POST /api/auth/register        — create user + wallet with starting balance (1
 POST /api/auth/login           — returns JWT
 GET  /api/wallet               — my wallet (balance, address)
 GET  /api/wallet/transactions  — my transaction history (paged)
-POST /api/game/play            — { stake?, choice } -> server decides -> result + new balance
+POST /api/game/play            — { stake, choice } -> server decides -> result + new balance
 POST /api/transfers            — { toAddress, amount } -> atomic transfer
 GET  /api/admin/wallets        — [Admin] all users + balances
 GET  /api/admin/transactions   — [Admin] global audit log (filterable)
@@ -88,8 +88,8 @@ GET  /api/admin/game-rounds    — [Admin] all game rounds
 - Errors returned as ProblemDetails via global exception-handling middleware.
 
 ### Game rules (the Flip)
-- Choice: heads/tails. Optional stake (must be > 0 and <= balance if provided).
-- Staked win pays 2x stake; loss forfeits stake. Practice play (no stake): flat +5 FLIP reward, rate-limited to reasonable bounds later ("with more time" item).
+- Choice: heads/tails. Stake required (must be > 0 and <= balance).
+- A win pays 2x stake; a loss forfeits the stake.
 - Server records the round and writes the corresponding Transaction(s) atomically with the balance change.
 
 ### Transfer rules

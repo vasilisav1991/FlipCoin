@@ -12,14 +12,10 @@ namespace Flipcoin.Application.Game;
 /// the payout math, and records the round plus any ledger entries in a single
 /// transaction. The client never influences the outcome.
 ///
-/// Rules: a staked win pays 2x the stake (net +stake); a staked loss forfeits it.
-/// A practice round (no stake) pays a flat +5 on a correct guess and nothing on a
-/// wrong one. (Interpretation of the plan's "flat +5" reward — easily changed.)
+/// Rules: a win pays 2x the stake (net +stake); a loss forfeits it.
 /// </summary>
 public class PlayGameHandler
 {
-    private const decimal PracticeReward = 5m;
-
     private readonly IWalletRepository _wallets;
     private readonly IGameRoundRepository _gameRounds;
     private readonly IUnitOfWork _unitOfWork;
@@ -42,16 +38,16 @@ public class PlayGameHandler
 
     public async Task<PlayGameResult> HandleAsync(PlayGameCommand command, CancellationToken cancellationToken = default)
     {
-        var stake = command.Stake ?? 0m;
-        if (stake < 0m)
+        var stake = command.Stake;
+        if (stake <= 0m)
         {
-            throw new ArgumentException("Stake cannot be negative.", nameof(command));
+            throw new ArgumentException("Stake must be positive.", nameof(command));
         }
 
         var wallet = await _wallets.GetByUserIdAsync(command.UserId, cancellationToken)
             ?? throw new WalletNotFoundException();
 
-        if (stake > 0m && stake > wallet.Balance)
+        if (stake > wallet.Balance)
         {
             throw new InsufficientBalanceException(wallet.Balance, stake);
         }
@@ -59,23 +55,11 @@ public class PlayGameHandler
         var outcome = _coinFlipper.Flip();
         var won = command.Choice == outcome;
 
-        decimal payout;
-        if (stake > 0m)
+        wallet.PlaceStake(stake);
+        var payout = won ? stake * 2m : 0m;
+        if (payout > 0m)
         {
-            wallet.PlaceStake(stake);
-            payout = won ? stake * 2m : 0m;
-            if (payout > 0m)
-            {
-                wallet.ReceivePayout(payout);
-            }
-        }
-        else
-        {
-            payout = won ? PracticeReward : 0m;
-            if (payout > 0m)
-            {
-                wallet.ReceiveReward(payout);
-            }
+            wallet.ReceivePayout(payout);
         }
 
         var round = new GameRound(command.UserId, stake, command.Choice, outcome, payout);

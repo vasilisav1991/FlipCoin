@@ -41,7 +41,7 @@ public class ApiClient
         => SendAsync<PagedResult<TransactionDto>>(HttpMethod.Get, $"api/wallet/transactions?page={page}&pageSize={pageSize}");
 
     // --- Game ---
-    public Task<PlayResult> PlayAsync(string choice, decimal? stake)
+    public Task<PlayResult> PlayAsync(string choice, decimal stake)
         => SendAsync<PlayResult>(HttpMethod.Post, "api/game/play", new { choice, stake });
 
     // --- Transfers ---

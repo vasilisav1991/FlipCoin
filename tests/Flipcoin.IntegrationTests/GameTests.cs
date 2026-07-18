@@ -27,17 +27,27 @@ public class GameTests : IClassFixture<FlipcoinApiFactory>
     }
 
     [Fact]
-    public async Task Practice_play_returns_a_result_and_never_reduces_balance()
+    public async Task Staked_play_settles_the_balance_by_the_stake()
+    {
+        var client = await AuthenticatedClientAsync("player1@flipcoin.local");
+
+        var response = await client.PostAsJsonAsync("/api/game/play", new { choice = "Heads", stake = 10m });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<PlayResponse>();
+        // Won => -10 stake +20 payout = 110; lost => 90. Balance starts at 100.
+        Assert.Equal(result!.Won ? 110m : 90m, result.NewBalance);
+        Assert.Equal(result.Won ? 20m : 0m, result.Payout);
+    }
+
+    [Fact]
+    public async Task Missing_stake_is_rejected()
     {
         var client = await AuthenticatedClientAsync("player1@flipcoin.local");
 
         var response = await client.PostAsJsonAsync("/api/game/play", new { choice = "Heads" });
 
-        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var result = await response.Content.ReadFromJsonAsync<PlayResponse>();
-        // Practice: won => +5, lost => +0. Balance starts at 100.
-        Assert.Equal(result!.Won ? 105m : 100m, result.NewBalance);
-        Assert.Equal(result.Won ? 5m : 0m, result.Payout);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

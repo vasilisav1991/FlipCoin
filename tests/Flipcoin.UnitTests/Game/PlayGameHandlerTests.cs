@@ -58,32 +58,20 @@ public class PlayGameHandlerTests
         Assert.Equal(90m, wallet.Balance);
     }
 
-    [Fact]
-    public async Task Practice_win_rewards_flat_five()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10)]
+    public async Task Non_positive_stake_is_rejected(decimal stake)
     {
         var userId = Guid.NewGuid();
         var wallet = SetupWallet(userId, 100m);
         _coinFlipper.Setup(c => c.Flip()).Returns(CoinSide.Heads);
 
-        var result = await CreateHandler().HandleAsync(new PlayGameCommand(userId, CoinSide.Heads, null));
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            CreateHandler().HandleAsync(new PlayGameCommand(userId, CoinSide.Heads, stake)));
 
-        Assert.True(result.Won);
-        Assert.Equal(5m, result.Payout);
-        Assert.Equal(105m, wallet.Balance);
-    }
-
-    [Fact]
-    public async Task Practice_loss_pays_nothing()
-    {
-        var userId = Guid.NewGuid();
-        var wallet = SetupWallet(userId, 100m);
-        _coinFlipper.Setup(c => c.Flip()).Returns(CoinSide.Tails);
-
-        var result = await CreateHandler().HandleAsync(new PlayGameCommand(userId, CoinSide.Heads, null));
-
-        Assert.False(result.Won);
-        Assert.Equal(0m, result.Payout);
         Assert.Equal(100m, wallet.Balance);
+        _unitOfWork.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

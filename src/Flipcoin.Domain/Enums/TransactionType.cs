@@ -6,9 +6,6 @@ namespace Flipcoin.Domain.Enums;
 /// </summary>
 public enum TransactionType
 {
-    /// <summary>Practice-play flat reward (no stake).</summary>
-    Reward = 0,
-
     /// <summary>Coins received from another wallet via a transfer.</summary>
     TransferIn = 1,
 
